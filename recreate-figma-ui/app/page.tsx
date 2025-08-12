@@ -3,6 +3,16 @@
 import type React from "react"
 
 import { useState } from "react"
+import Image, { StaticImageData } from "next/image"
+import XmasPng from "../Trees/Christmas.png"
+import PalmPng from "../Trees/Palm.png"
+import SprucePng from "../Trees/Spruce.png"
+import SakuraPng from "../Trees/Sakura.png"
+import BonsaiPng from "../Trees/BonsaiPotted.png"
+import RecyclePng from "../icons/recycle.png"
+import CyclePng from "../icons/cycle.png"
+import TrainPng from "../icons/train.png"
+import SeasonalProdPng from "../icons/seasonal prod.png"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 
@@ -11,7 +21,8 @@ type Screen = "shop" | "garden" | "world" | "tasks" | "add-friends"
 type GardenItem = {
   id: string
   name: string
-  emoji: string
+  emoji?: string
+  icon?: StaticImageData
   color: string
   x: number
   y: number
@@ -28,7 +39,8 @@ type Task = {
   name: string
   progress: number
   target: number
-  emoji: string
+  emoji?: string
+  icon?: StaticImageData
   color: string
   reward: number
   completed: boolean
@@ -47,12 +59,12 @@ const shopItems = [
   { name: "POPPIES", price: 100, emoji: "🌸", color: "text-red-500" },
   { name: "FOUNTAIN", price: 500, emoji: "⛲", color: "text-blue-500" },
   { name: "WATERFALL", price: 750, emoji: "🏔️", color: "text-gray-600" },
-  { name: "XMAS TREE", price: 200, emoji: "🎄", color: "text-green-600" },
-  { name: "PALM TREE", price: 300, emoji: "🌴", color: "text-green-500" },
+  { name: "XMAS TREE", price: 200, emoji: "🎄", icon: XmasPng, color: "text-green-600" },
+  { name: "PALM TREE", price: 300, emoji: "🌴", icon: PalmPng, color: "text-green-500" },
   { name: "WELL", price: 400, emoji: "🪣", color: "text-brown-600" },
-  { name: "SPRUCE TREE", price: 250, emoji: "🌲", color: "text-green-700" },
-  { name: "SAKURA TREE", price: 350, emoji: "🌸", color: "text-pink-400" },
-  { name: "BONSAI TREE", price: 450, emoji: "🌳", color: "text-green-600" },
+  { name: "SPRUCE TREE", price: 250, emoji: "🌲", icon: SprucePng, color: "text-green-700" },
+  { name: "SAKURA TREE", price: 350, emoji: "🌸", icon: SakuraPng, color: "text-pink-400" },
+  { name: "BONSAI TREE", price: 450, emoji: "🌳", icon: BonsaiPng, color: "text-green-600" },
 ]
 
 const nearbyFriends = [
@@ -148,7 +160,7 @@ export default function GardenApp() {
       name: "RECYCLE 10 ITEMS",
       progress: 8,
       target: 10,
-      emoji: "♻️",
+      icon: RecyclePng,
       color: "text-green-600",
       reward: 50,
       completed: false,
@@ -158,7 +170,7 @@ export default function GardenApp() {
       name: "CYCLE/NINJA TO WORK",
       progress: 150,
       target: 150,
-      emoji: "🚴",
+      icon: CyclePng,
       color: "text-blue-600",
       reward: 75,
       completed: false,
@@ -168,7 +180,7 @@ export default function GardenApp() {
       name: "TAKE PUBLIC TRANSPORT",
       progress: 75,
       target: 100,
-      emoji: "🚊",
+      icon: TrainPng,
       color: "text-purple-600",
       reward: 40,
       completed: false,
@@ -178,7 +190,7 @@ export default function GardenApp() {
       name: "EAT SEASONAL PRODUCE",
       progress: 200,
       target: 200,
-      emoji: "🥕",
+      icon: SeasonalProdPng,
       color: "text-orange-600",
       reward: 60,
       completed: false,
@@ -192,21 +204,21 @@ export default function GardenApp() {
     { name: "POPPIES", quantity: 12, emoji: "🌸", color: "text-red-500" },
     { name: "FOUNTAIN", quantity: 1, emoji: "⛲", color: "text-blue-500" },
     { name: "WATERFALL", quantity: 0, emoji: "🏔️", color: "text-gray-600" },
-    { name: "XMAS TREE", quantity: 2, emoji: "🎄", color: "text-green-600" },
-    { name: "PALM TREE", quantity: 1, emoji: "🌴", color: "text-green-500" },
+    { name: "XMAS TREE", quantity: 2, emoji: "🎄", icon: XmasPng, color: "text-green-600" },
+    { name: "PALM TREE", quantity: 1, emoji: "🌴", icon: PalmPng, color: "text-green-500" },
     { name: "WELL", quantity: 1, emoji: "🪣", color: "text-brown-600" },
-    { name: "SPRUCE TREE", quantity: 4, emoji: "🌲", color: "text-green-700" },
-    { name: "SAKURA TREE", quantity: 2, emoji: "🌸", color: "text-pink-400" },
-    { name: "BONSAI TREE", quantity: 1, emoji: "🌳", color: "text-green-600" },
+    { name: "SPRUCE TREE", quantity: 4, emoji: "🌲", icon: SprucePng, color: "text-green-700" },
+    { name: "SAKURA TREE", quantity: 2, emoji: "🌸", icon: SakuraPng, color: "text-pink-400" },
+    { name: "BONSAI TREE", quantity: 1, emoji: "🌳", icon: BonsaiPng, color: "text-green-600" },
   ])
 
   const [gardenItems, setGardenItems] = useState<GardenItem[]>([
-    { id: "1", name: "XMAS TREE", emoji: "🎄", color: "text-green-600", x: 20, y: 20 },
-    { id: "2", name: "SPRUCE TREE", emoji: "🌲", color: "text-green-700", x: 20, y: 200 },
-    { id: "3", name: "SAKURA TREE", emoji: "🌸", color: "text-pink-400", x: 120, y: 180 },
+    { id: "1", name: "XMAS TREE", emoji: "🎄", icon: XmasPng, color: "text-green-600", x: 20, y: 20 },
+    { id: "2", name: "SPRUCE TREE", emoji: "🌲", icon: SprucePng, color: "text-green-700", x: 20, y: 200 },
+    { id: "3", name: "SAKURA TREE", emoji: "🌸", icon: SakuraPng, color: "text-pink-400", x: 120, y: 180 },
     { id: "4", name: "WATERFALL", emoji: "🏔️", color: "text-gray-600", x: 180, y: 160 },
-    { id: "5", name: "BONSAI TREE", emoji: "🌳", color: "text-green-600", x: 240, y: 180 },
-    { id: "6", name: "XMAS TREE", emoji: "🎄", color: "text-green-600", x: 120, y: 240 },
+    { id: "5", name: "BONSAI TREE", emoji: "🌳", icon: BonsaiPng, color: "text-green-600", x: 240, y: 180 },
+    { id: "6", name: "XMAS TREE", emoji: "🎄", icon: XmasPng, color: "text-green-600", x: 120, y: 240 },
   ])
 
   const [touchDrag, setTouchDrag] = useState<{
@@ -300,10 +312,11 @@ export default function GardenApp() {
 
       if (dragData.type === "inventory" && dragData.item.quantity > 0) {
         // Add item from inventory to garden
-        const newItem: GardenItem = {
+         const newItem: GardenItem = {
           id: Date.now().toString(),
           name: dragData.item.name,
-          emoji: dragData.item.emoji,
+           emoji: dragData.item.emoji,
+           icon: dragData.item.icon,
           color: dragData.item.color,
           x: Math.max(0, Math.min(x, maxX)), // Keep within bounds dynamically
           y: Math.max(0, Math.min(y, maxY)),
@@ -420,6 +433,7 @@ export default function GardenApp() {
           id: Date.now().toString(),
           name: touchDrag.data.item.name,
           emoji: touchDrag.data.item.emoji,
+          icon: touchDrag.data.item.icon,
           color: touchDrag.data.item.color,
           x: Math.max(0, Math.min(x, maxX)),
           y: Math.max(0, Math.min(y, maxY)),
@@ -520,9 +534,21 @@ export default function GardenApp() {
                 ? 'bg-green-200 scale-110 shadow-lg purchase-success' 
                 : 'hover:bg-gray-200'
             }`}>
-              <span className={`text-2xl ${item.color} transition-all duration-300 ${
-                purchasedItems.has(item.name) ? 'scale-125' : ''
-              }`}>{item.emoji}</span>
+              {item.icon ? (
+                <Image
+                  src={item.icon}
+                  alt={item.name}
+                  width={40}
+                  height={40}
+                  className={`h-10 w-10 object-contain transition-all duration-300 ${
+                    purchasedItems.has(item.name) ? 'scale-125' : ''
+                  }`}
+                />
+              ) : (
+                <span className={`text-2xl ${item.color} transition-all duration-300 ${
+                  purchasedItems.has(item.name) ? 'scale-125' : ''
+                }`}>{item.emoji}</span>
+              )}
             </div>
             <div className="text-xs font-bold mb-1">{item.name}</div>
             <div className="text-xs text-gray-600 mb-2">${item.price}</div>
@@ -599,7 +625,11 @@ export default function GardenApp() {
               onDragStart={(e) => handleDragStart(e, { type: "garden", item, sourceId: item.id })}
               onTouchStart={(e) => handleTouchStart(e, { type: "garden", item, sourceId: item.id })}
             >
-              <span className={`text-2xl ${item.color} drop-shadow-sm`}>{item.emoji}</span>
+              {item.icon ? (
+                <Image src={item.icon} alt={item.name} width={40} height={40} className="h-10 w-10 object-contain drop-shadow-sm" />
+              ) : (
+                <span className={`text-2xl ${item.color} drop-shadow-sm`}>{item.emoji}</span>
+              )}
             </div>
           ))}
         </div>
@@ -630,9 +660,21 @@ export default function GardenApp() {
               <div className={`bg-white rounded-lg p-2 mb-1 h-12 flex items-center justify-center hover:bg-gray-100 transition-all duration-300 border ${
                 purchasedItems.has(item.name) ? "bg-green-100 shadow-lg item-highlight" : ""
               }`}>
-                <span className={`text-lg ${item.color} transition-all duration-300 ${
-                  purchasedItems.has(item.name) ? "scale-110" : ""
-                }`}>{item.emoji}</span>
+                {item.icon ? (
+                  <Image
+                    src={item.icon}
+                    alt={item.name}
+                    width={32}
+                    height={32}
+                    className={`h-8 w-8 object-contain transition-all duration-300 ${
+                      purchasedItems.has(item.name) ? "scale-110" : ""
+                    }`}
+                  />
+                ) : (
+                  <span className={`text-lg ${item.color} transition-all duration-300 ${
+                    purchasedItems.has(item.name) ? "scale-110" : ""
+                  }`}>{item.emoji}</span>
+                )}
               </div>
               <div className="text-[10px] font-bold mb-1 leading-tight">{item.name}</div>
               <div className={`text-[10px] ${item.quantity > 0 ? "text-gray-600" : "text-red-500"}`}>
@@ -706,7 +748,17 @@ export default function GardenApp() {
             key={task.id}
             className={`flex items-center gap-4 p-3 rounded-lg ${task.completed ? "bg-green-100" : "bg-gray-50"}`}
           >
-            <span className={`text-2xl ${task.color} ${task.completed ? "opacity-50" : ""}`}>{task.emoji}</span>
+            {task.icon ? (
+              <Image
+                src={task.icon}
+                alt={task.name}
+                width={32}
+                height={32}
+                className={`h-8 w-8 object-contain ${task.completed ? "opacity-50" : ""}`}
+              />
+            ) : (
+              <span className={`text-2xl ${task.color} ${task.completed ? "opacity-50" : ""}`}>{task.emoji}</span>
+            )}
             <div className="flex-1">
               <div className={`text-xs font-bold mb-1 ${task.completed ? "line-through text-gray-500" : ""}`}>
                 {task.name}
