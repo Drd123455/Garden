@@ -28,6 +28,12 @@ if (!process.env.DATABASE_URL) {
   throw new Error("DATABASE_URL environment variable is not set");
 }
 
-const client = postgres(process.env.DATABASE_URL);
+// Configure postgres client for serverless environment
+const client = postgres(process.env.DATABASE_URL, {
+  max: 1, // Limit connections for serverless
+  idle_timeout: 20, // Close idle connections quickly
+  connect_timeout: 10, // Fast connection timeout
+  ssl: 'require' // Enable SSL for Supabase
+});
 
 export const db = drizzle(client, { schema });
