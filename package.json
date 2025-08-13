@@ -1,5 +1,17 @@
 {
   "dependencies": {
-    "firebase": "^12.1.0"
+    "dotenv": "^17.2.1",
+    "drizzle-orm": "^0.44.4",
+    "firebase": "^12.1.0",
+    "postgres": "^3.4.7"
+  },
+  "devDependencies": {
+    "drizzle-kit": "^0.31.4",
+    "tsx": "^4.20.4"
+  },
+  "scripts": {
+    "db:generate": "npx drizzle-kit generate",
+    "db:migrate": "npx drizzle-kit migrate",
+    "db:seed": "tsx db/seed/index.ts"
   }
 }

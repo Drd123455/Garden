@@ -1,9 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  output: "export",
+  // Removed output: "export" to enable server-side features for Supabase
   images: {
-    // Disable the Image Optimization API for static exports
     unoptimized: true,
   },
 };
