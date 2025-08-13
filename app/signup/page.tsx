@@ -25,27 +25,14 @@ export default function SignUpPage() {
     setError(null)
     setSuccess(null)
     setIsSubmitting(true)
-    try {
-      const res = await fetch("/api/signup", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username: username.trim(), email: email.trim(), password }),
-      })
-      const data = await res.json().catch(() => ({}))
-      if (!res.ok) {
-        setError(data?.error || "Failed to create account")
-        return
-      }
-      setSuccess("Account created. You can now sign in.")
-      setUsername("")
-      setEmail("")
-      setPassword("")
-      setConfirmPassword("")
-    } catch (err) {
-      setError("Network error. Please try again.")
-    } finally {
-      setIsSubmitting(false)
-    }
+    // Static demo: simulate a small delay and a successful signup without any API
+    await new Promise((resolve) => setTimeout(resolve, 500))
+    setSuccess("Account created. You can now sign in.")
+    setUsername("")
+    setEmail("")
+    setPassword("")
+    setConfirmPassword("")
+    setIsSubmitting(false)
   }
 
   return (
