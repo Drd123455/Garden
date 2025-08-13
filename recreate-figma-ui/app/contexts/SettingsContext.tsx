@@ -25,7 +25,7 @@ interface SettingsContextType {
 const defaultSettings: UserSettings = {
   username: "",
   email: "",
-  theme: "system",
+  theme: "light",
   soundEnabled: true,
   notificationsEnabled: true,
   autoSave: true,
