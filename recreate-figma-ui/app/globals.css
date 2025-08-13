@@ -145,6 +145,29 @@
   .screen-exit {
     animation: screenFadeOut 0.2s ease both;
   }
+
+  /* Ensure consistent screen heights */
+  .screen-container {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .screen-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .screen-header {
+    flex-shrink: 0;
+  }
+
+  .screen-body {
+    flex: 1;
+    overflow-y: auto;
+  }
 }
 
 @keyframes purchaseSuccess {

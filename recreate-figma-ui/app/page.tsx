@@ -1099,7 +1099,7 @@ export default function GardenApp() {
   }
 
   const ShopScreen = () => (
-    <div className="flex-1 p-4">
+    <div className="flex-1 flex flex-col p-4">
       <div className="flex justify-between items-center mb-4">
         <div className="w-6 h-6 bg-green-600 rounded-full"></div>
         <span className="text-sm font-bold">SHOP</span>
@@ -1112,7 +1112,7 @@ export default function GardenApp() {
           )}
         </div>
       </div>
-      <div className="grid grid-cols-3 gap-4">
+      <div className="flex-1 grid grid-cols-3 gap-4 content-start">
         {shopItems.map((item, index) => (
           <div key={index} className="text-center">
             <div className={`bg-gray-100 rounded-lg p-4 mb-2 h-20 flex items-center justify-center transition-all duration-300 ${
@@ -1163,7 +1163,7 @@ export default function GardenApp() {
 
   const GardenScreen = () => (
     <div className="flex-1 flex flex-col">
-      <div className="p-4 pb-2">
+      <div className="p-4 pb-2 flex-shrink-0">
         <div className="flex justify-between items-center mb-4">
           <div className="w-6 h-6 bg-green-600 rounded-full"></div>
           <span className="text-sm font-bold text-green-600">Garden</span>
@@ -1172,7 +1172,7 @@ export default function GardenApp() {
         <div
           className="relative bg-green-400 border-2 border-green-600 rounded-lg overflow-hidden"
           style={{
-            height: "300px",
+            height: "280px",
             backgroundImage: `
               radial-gradient(circle at 25% 25%, #22c55e 2px, transparent 2px),
               radial-gradient(circle at 75% 75%, #16a34a 2px, transparent 2px),
@@ -1226,11 +1226,11 @@ export default function GardenApp() {
         onDrop={handleInventoryDrop}
         data-inventory-area
       >
-        <div className="flex justify-between items-center mb-3">
+        <div className="flex justify-between items-center mb-3 flex-shrink-0">
           <h2 className="text-lg font-black">INVENTORY</h2>
           <span className="text-xs text-gray-600">Drag to place • Drop here to return</span>
         </div>
-        <div className="grid grid-cols-4 gap-3 max-h-[180px] overflow-y-auto">
+        <div className="grid grid-cols-4 gap-3 flex-1 overflow-y-auto">
           {inventoryItems.map((item, index) => (
             <div
               key={item.id}
@@ -1301,8 +1301,8 @@ export default function GardenApp() {
     // If viewing a specific garden, show the garden view
     if (visitedGarden) {
       return (
-        <div className="flex-1 p-4">
-          <div className="flex items-center gap-2 mb-4">
+        <div className="flex-1 flex flex-col p-4">
+          <div className="flex items-center gap-2 mb-4 flex-shrink-0">
             <button 
               onClick={closeVisitedGarden}
               className="text-xl hover:text-green-600 transition-colors"
@@ -1311,7 +1311,7 @@ export default function GardenApp() {
             </button>
             <div className="ml-auto text-lg font-bold">${money}</div>
           </div>
-          <div className="text-center mb-6">
+          <div className="text-center mb-6 flex-shrink-0">
             <div className="w-24 h-24 bg-green-500 mx-auto mb-2 relative rounded-full">
               <div className="absolute inset-2 bg-white rounded-full"></div>
               <div className="absolute top-4 left-4 w-4 h-4 bg-green-500 rounded-full"></div>
@@ -1322,7 +1322,7 @@ export default function GardenApp() {
           
           {/* Garden Grid */}
           <div 
-            className="relative w-full h-96 border-2 border-green-600 rounded-lg overflow-hidden"
+            className="relative w-full border-2 border-green-600 rounded-lg overflow-hidden flex-1"
             style={{
               backgroundImage: `
                 radial-gradient(circle at 25% 25%, #22c55e 2px, transparent 2px),
@@ -1369,7 +1369,7 @@ export default function GardenApp() {
             ))}
           </div>
           
-          <div className="mt-4 text-center">
+          <div className="mt-4 text-center flex-shrink-0">
             <p className="text-sm text-gray-600">
               {visitedGarden.gardenItems.length} items in this garden
             </p>
@@ -1379,13 +1379,13 @@ export default function GardenApp() {
     }
 
     return (
-      <div className="flex-1 p-4">
-        <div className="flex justify-between items-center mb-4">
+      <div className="flex-1 flex flex-col p-4">
+        <div className="flex justify-between items-center mb-4 flex-shrink-0">
           <div className="w-6 h-6 bg-green-600 rounded-full"></div>
           <span className="text-sm font-bold text-green-600">WORLD</span>
           <div></div>
         </div>
-        <div className="flex gap-2 mb-6">
+        <div className="flex gap-2 mb-6 flex-shrink-0">
           <Button className="bg-green-600 hover:bg-green-700 text-white font-bold px-6">GARDENS</Button>
           <Button
             variant="outline"
@@ -1469,14 +1469,14 @@ export default function GardenApp() {
   }
 
   const TasksScreen = () => (
-    <div className="flex-1 p-4">
-      <div className="flex items-center gap-2 mb-4">
+    <div className="flex-1 flex flex-col p-4">
+      <div className="flex items-center gap-2 mb-4 flex-shrink-0">
         <button onClick={() => setCurrentScreen("garden")} className="text-xl">
           ←
         </button>
         <div className="ml-auto text-lg font-bold">${money}</div>
       </div>
-      <div className="text-center mb-6">
+      <div className="text-center mb-6 flex-shrink-0">
         <div className="w-24 h-24 bg-red-500 mx-auto mb-2 relative">
           <div className="absolute inset-2 bg-black"></div>
           <div className="absolute top-4 left-4 w-4 h-4 bg-red-500"></div>
@@ -1484,8 +1484,8 @@ export default function GardenApp() {
         <h2 className="text-xl font-black">{username.toUpperCase()}</h2>
         <p className="text-sm text-gray-600">LONDON—BASILDON</p>
       </div>
-      <h3 className="text-lg font-black mb-4">TASK LIST</h3>
-      <div className="space-y-4">
+      <h3 className="text-lg font-black mb-4 flex-shrink-0">TASK LIST</h3>
+      <div className="space-y-4 flex-1 overflow-y-auto">
         {tasks.map((task) => (
           <div
             key={task.id}
@@ -1548,8 +1548,8 @@ export default function GardenApp() {
   )
 
   const AddFriendsScreen = () => (
-    <div className="flex-1 p-4">
-      <div className="flex items-center gap-2 mb-4">
+    <div className="flex-1 flex flex-col p-4">
+      <div className="flex items-center gap-2 mb-4 flex-shrink-0">
         <button 
           onClick={() => setCurrentScreen("world")}
           className="text-xl hover:text-green-600 transition-colors"
@@ -1559,7 +1559,7 @@ export default function GardenApp() {
         <div className="ml-auto text-lg font-bold">${money}</div>
       </div>
       
-      <div className="bg-green-100 rounded-lg p-4 mb-6">
+      <div className="bg-green-100 rounded-lg p-4 mb-6 flex-shrink-0">
         <div className="flex gap-2 mb-4">
           <Input
             placeholder="Search for users by username..."
@@ -1583,7 +1583,7 @@ export default function GardenApp() {
 
       {/* Search Results */}
       {searchResults.length > 0 && (
-        <div className="space-y-4 mb-6">
+        <div className="space-y-4 mb-6 flex-shrink-0">
           <div className="text-sm font-bold text-gray-700">SEARCH RESULTS</div>
           {searchResults.map((user) => (
             <div key={user.id} className="flex items-center justify-between p-3 bg-white rounded-lg border-2 border-gray-200">
@@ -1614,7 +1614,7 @@ export default function GardenApp() {
       )}
 
       {/* Current Friends */}
-      <div className="space-y-4 mb-6">
+      <div className="space-y-4 flex-1 overflow-y-auto">
         <div className="text-sm font-bold text-gray-700">CURRENT FRIENDS</div>
         {friends.length === 0 ? (
           <div className="text-center py-4 text-gray-500 text-sm">
@@ -1693,8 +1693,8 @@ export default function GardenApp() {
   }
 
   return (
-    <div className="max-w-sm mx-auto bg-white rounded-3xl shadow-2xl overflow-hidden">
-      <div key={currentScreen} className="screen-enter">
+    <div className="max-w-sm mx-auto bg-white rounded-3xl shadow-2xl overflow-hidden h-screen flex flex-col">
+      <div key={currentScreen} className="screen-enter flex-1 flex flex-col">
         {renderScreen()}
       </div>
       {currentScreen !== "tasks" && <BottomNav />}
