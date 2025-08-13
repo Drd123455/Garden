@@ -5,7 +5,7 @@ import firebaseApp from "../firebase"
 
 import { useState, useEffect } from "react"
 import Image, { StaticImageData }  from "next/image"
-import { ShoppingBag, Sprout, Globe2 } from "lucide-react"
+import { ShoppingBag, Sprout, Globe2, Settings } from "lucide-react"
 import XmasPng from "../Trees/Christmas.png"
 import PalmPng from "../Trees/Palm.png"
 import SprucePng from "../Trees/Spruce.png"
@@ -881,6 +881,13 @@ export default function GardenApp() {
               <span className={`text-[11px] font-extrabold tracking-wide transition-colors ${isWorldActive ? "text-green-700" : "text-gray-600"}`}>WORLD</span>
               <div className={`pointer-events-none absolute -top-0.5 left-1/2 h-1 w-8 -translate-x-1/2 rounded-full transition-opacity ${isWorldActive ? "bg-green-500/90 opacity-100" : "opacity-0"}`} />
             </button>
+            <button
+              onClick={() => window.location.href = "/settings"}
+              className="group relative flex-1 items-center justify-center py-3 flex flex-col gap-1"
+            >
+              <Settings className="h-5 w-5 transition-all text-gray-500 group-hover:text-gray-700" />
+              <span className="text-[11px] font-extrabold tracking-wide transition-colors text-gray-600">SETTINGS</span>
+            </button>
           </div>
         </div>
       </div>
@@ -1288,6 +1295,13 @@ export default function GardenApp() {
       <div className="fixed top-4 right-4 flex flex-col gap-2 z-50">
         <Button size="sm" onClick={() => setCurrentScreen("tasks")} className="text-xs">
           TASK
+        </Button>
+        <Button 
+          size="sm" 
+          onClick={() => window.location.href = "/settings"} 
+          className="text-xs bg-gray-600 hover:bg-gray-700"
+        >
+          ⚙️
         </Button>
       </div>
     </div>
