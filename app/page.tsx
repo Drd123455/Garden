@@ -193,6 +193,21 @@ export default function GardenApp() {
   const [signInError, setSignInError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
 
+  // Initialize authentication state from localStorage
+  useEffect(() => {
+    const savedUser = localStorage.getItem("currentUser")
+    if (savedUser) {
+      try {
+        const user = JSON.parse(savedUser)
+        setCurrentUser(user)
+        setIsSignedIn(true)
+      } catch (error) {
+        console.error("Failed to parse saved user:", error)
+        localStorage.removeItem("currentUser")
+      }
+    }
+  }, [])
+
   const [currentScreen, setCurrentScreen] = useState<Screen>("shop")
   const [searchQuery, setSearchQuery] = useState("")
 
@@ -520,6 +535,7 @@ export default function GardenApp() {
         if (demoUser.status === "success" && demoUser.data) {
           setCurrentUser(demoUser.data)
           setIsSignedIn(true)
+          localStorage.setItem("currentUser", JSON.stringify(demoUser.data))
           return
         }
       }
@@ -530,6 +546,7 @@ export default function GardenApp() {
         // In a real app, you'd verify the password hash here
         setCurrentUser(result.data)
         setIsSignedIn(true)
+        localStorage.setItem("currentUser", JSON.stringify(result.data))
       } else {
         setSignInError("User not found. Create an account first.")
       }
@@ -554,6 +571,7 @@ export default function GardenApp() {
       if (result.status === "success" && result.data) {
         setCurrentUser(result.data)
         setIsSignedIn(true)
+        localStorage.setItem("currentUser", JSON.stringify(result.data))
       } else {
         setSignInError(result.message || "Failed to create account")
       }
