@@ -9,11 +9,6 @@ if (process.env.NODE_ENV !== "production") {
   config({ path: ".env.local" });
 }
 
-// Debug logging
-console.log("NODE_ENV:", process.env.NODE_ENV);
-console.log("DATABASE_URL exists:", !!process.env.DATABASE_URL);
-console.log("DATABASE_URL length:", process.env.DATABASE_URL?.length);
-
 const schema = {
   exampleTable,
   users,
@@ -28,7 +23,7 @@ if (!process.env.DATABASE_URL) {
   throw new Error("DATABASE_URL environment variable is not set");
 }
 
-// Configure postgres client for serverless environment
+// Configure postgres client for Vercel serverless environment
 const client = postgres(process.env.DATABASE_URL, {
   max: 1, // Limit connections for serverless
   idle_timeout: 20, // Close idle connections quickly

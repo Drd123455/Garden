@@ -14,7 +14,8 @@ import {
   InsertInventory,
   InsertTask,
   InsertFriend,
-  InsertShopItem
+  InsertShopItem,
+  SelectUser
 } from "../schema";
 
 // User operations
@@ -327,7 +328,7 @@ export const getUsersWithGardenItems = async () => {
     
     // Then get garden items for each user
     const usersWithGardens = await Promise.all(
-      allUsers.map(async (user) => {
+      allUsers.map(async (user: SelectUser) => {
         const userGardenItems = await db.query.gardenItems.findMany({
           where: eq(gardenItems.userId, user.id)
         });
@@ -353,7 +354,7 @@ export const searchUsersByUsername = async (searchTerm: string, excludeUserId?: 
     });
     
     // Filter users by search term and exclude current user
-    const filteredUsers = allUsers.filter(user => 
+    const filteredUsers = allUsers.filter((user: SelectUser) => 
       user.username.toLowerCase().includes(searchQuery) && 
       (!excludeUserId || user.id !== excludeUserId)
     );
