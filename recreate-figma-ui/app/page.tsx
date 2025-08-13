@@ -1,9 +1,10 @@
 "use client"
 
 import type React from "react"
+import firebaseApp from "../firebase"
 
 import { useState } from "react"
-import Image, { StaticImageData } from "next/image"
+import Image, { StaticImageData }  from "next/image"
 import XmasPng from "../Trees/Christmas.png"
 import PalmPng from "../Trees/Palm.png"
 import SprucePng from "../Trees/Spruce.png"
@@ -13,6 +14,11 @@ import RecyclePng from "../icons/recycle.png"
 import CyclePng from "../icons/cycle.png"
 import TrainPng from "../icons/train.png"
 import SeasonalProdPng from "../icons/seasonal prod.png"
+import FlowerBluePng from "../OneDrive_3_8-12-2025/FlowerBlue.png"
+import FlowerPinkPng from "../OneDrive_3_8-12-2025/FlowerPink.png"
+import FlowerRedPng from "../OneDrive_3_8-12-2025/FlowerRed.png"
+import FlowerYellowPng from "../OneDrive_3_8-12-2025/FlowerYellow.png"
+import WellPng from "../OneDrive_3_8-12-2025/Well.png"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 
@@ -53,15 +59,15 @@ type Friend = {
 }
 
 const shopItems = [
-  { name: "ROSES", price: 150, emoji: "🌹", color: "text-pink-500" },
-  { name: "ORCHIDS", price: 175, emoji: "🌺", color: "text-purple-500" },
-  { name: "SUNFLOWERS", price: 125, emoji: "🌻", color: "text-yellow-500" },
-  { name: "POPPIES", price: 100, emoji: "🌸", color: "text-red-500" },
+  { name: "ROSES", price: 150, emoji: "🌹", icon: FlowerRedPng, color: "text-pink-500" },
+  { name: "ORCHIDS", price: 175, emoji: "🌺", icon: FlowerBluePng, color: "text-purple-500" },
+  { name: "SUNFLOWERS", price: 125, emoji: "🌻", icon: FlowerYellowPng, color: "text-yellow-500" },
+  { name: "POPPIES", price: 100, emoji: "🌸", icon: FlowerPinkPng, color: "text-red-500" },
   { name: "FOUNTAIN", price: 500, emoji: "⛲", color: "text-blue-500" },
   { name: "WATERFALL", price: 750, emoji: "🏔️", color: "text-gray-600" },
   { name: "XMAS TREE", price: 200, emoji: "🎄", icon: XmasPng, color: "text-green-600" },
   { name: "PALM TREE", price: 300, emoji: "🌴", icon: PalmPng, color: "text-green-500" },
-  { name: "WELL", price: 400, emoji: "🪣", color: "text-brown-600" },
+  { name: "WELL", price: 400, emoji: "🪣", icon: WellPng, color: "text-brown-600" },
   { name: "SPRUCE TREE", price: 250, emoji: "🌲", icon: SprucePng, color: "text-green-700" },
   { name: "SAKURA TREE", price: 350, emoji: "🌸", icon: SakuraPng, color: "text-pink-400" },
   { name: "BONSAI TREE", price: 450, emoji: "🌳", icon: BonsaiPng, color: "text-green-600" },
@@ -198,15 +204,15 @@ export default function GardenApp() {
   ])
 
   const [inventoryItems, setInventoryItems] = useState([
-    { name: "ROSES", quantity: 5, emoji: "🌹", color: "text-pink-500" },
-    { name: "ORCHIDS", quantity: 3, emoji: "🌺", color: "text-purple-500" },
-    { name: "SUNFLOWERS", quantity: 8, emoji: "🌻", color: "text-yellow-500" },
-    { name: "POPPIES", quantity: 12, emoji: "🌸", color: "text-red-500" },
+    { name: "ROSES", quantity: 5, emoji: "🌹", icon: FlowerRedPng, color: "text-pink-500" },
+    { name: "ORCHIDS", quantity: 3, emoji: "🌺", icon: FlowerBluePng, color: "text-purple-500" },
+    { name: "SUNFLOWERS", quantity: 8, emoji: "🌻", icon: FlowerYellowPng, color: "text-yellow-500" },
+    { name: "POPPIES", quantity: 12, emoji: "🌸", icon: FlowerPinkPng, color: "text-red-500" },
     { name: "FOUNTAIN", quantity: 1, emoji: "⛲", color: "text-blue-500" },
     { name: "WATERFALL", quantity: 0, emoji: "🏔️", color: "text-gray-600" },
     { name: "XMAS TREE", quantity: 2, emoji: "🎄", icon: XmasPng, color: "text-green-600" },
     { name: "PALM TREE", quantity: 1, emoji: "🌴", icon: PalmPng, color: "text-green-500" },
-    { name: "WELL", quantity: 1, emoji: "🪣", color: "text-brown-600" },
+    { name: "WELL", quantity: 1, emoji: "🪣", icon: WellPng, color: "text-brown-600" },
     { name: "SPRUCE TREE", quantity: 4, emoji: "🌲", icon: SprucePng, color: "text-green-700" },
     { name: "SAKURA TREE", quantity: 2, emoji: "🌸", icon: SakuraPng, color: "text-pink-400" },
     { name: "BONSAI TREE", quantity: 1, emoji: "🌳", icon: BonsaiPng, color: "text-green-600" },

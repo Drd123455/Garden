@@ -1,0 +1,10 @@
+{
+  "hosting": {
+    "public": "recreate-figma-ui/out",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ]
+  }
+}
