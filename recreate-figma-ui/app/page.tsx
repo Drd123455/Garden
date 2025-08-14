@@ -1297,7 +1297,7 @@ export default function GardenApp() {
           <div className="flex">
             <button
               onClick={() => setCurrentScreen("shop")}
-              className="group relative flex-1 items-center justify-center py-3 flex flex-col gap-1"
+              className="group relative flex-1 items-center justify-center py-3 flex flex-col gap-1 hover-scale"
             >
               <ShoppingBag className={`h-5 w-5 transition-all ${currentScreen === "shop" ? "text-green-600 scale-110" : "text-gray-500 group-hover:text-gray-700"}`} />
               <span className={`text-[11px] font-extrabold tracking-wide transition-colors ${currentScreen === "shop" ? "text-green-700" : "text-gray-600"}`}>SHOP</span>
@@ -1305,7 +1305,7 @@ export default function GardenApp() {
             </button>
             <button
               onClick={() => setCurrentScreen("garden")}
-              className="group relative flex-1 items-center justify-center py-3 flex flex-col gap-1"
+              className="group relative flex-1 items-center justify-center py-3 flex flex-col gap-1 hover-scale"
             >
               <Sprout className={`h-5 w-5 transition-all ${currentScreen === "garden" ? "text-green-600 scale-110" : "text-gray-500 group-hover:text-gray-700"}`} />
               <span className={`text-[11px] font-extrabold tracking-wide transition-colors ${currentScreen === "garden" ? "text-green-700" : "text-gray-600"}`}>GARDEN</span>
@@ -1313,15 +1313,15 @@ export default function GardenApp() {
             </button>
             <button
               onClick={() => setCurrentScreen("world")}
-              className="group relative flex-1 items-center justify-center py-3 flex flex-col gap-1"
+              className="group relative flex-1 items-center justify-center py-3 flex flex-col gap-1 hover-scale"
             >
               <Globe2 className={`h-5 w-5 transition-all ${isWorldActive ? "text-green-600 scale-110" : "text-gray-500 group-hover:text-gray-700"}`} />
               <span className={`text-[11px] font-extrabold tracking-wide transition-colors ${isWorldActive ? "text-green-700" : "text-gray-600"}`}>WORLD</span>
-              <div className={`pointer-events-none absolute -top-0.5 left-1/2 h-1 w-8 -translate-x-1/2 rounded-full transition-opacity ${isWorldActive ? "bg-green-500/90 opacity-100" : "opacity-0"}`} />
+              <div className={`pointer-events-none absolute -top-0.5 left-1/2 h-1 w-8 -translate-x-1/2 rounded-full transition-colors ${isWorldActive ? "bg-green-500/90 opacity-100" : "opacity-0"}`} />
             </button>
             <button
               onClick={() => setCurrentScreen("profile")}
-              className="group relative flex-1 items-center justify-center py-3 flex flex-col gap-1"
+              className="group relative flex-1 items-center justify-center py-3 flex flex-col gap-1 hover-scale"
             >
               <User className="h-5 w-5 transition-all text-gray-500 group-hover:text-gray-700" />
               <span className={`text-[11px] font-extrabold tracking-wide transition-colors ${currentScreen === "profile" ? "text-green-700" : "text-gray-600"}`}>PROFILE</span>
@@ -1338,7 +1338,7 @@ export default function GardenApp() {
       <div className="flex justify-between items-center mb-4 flex-shrink-0">
         <button 
           onClick={() => setCurrentScreen("garden")}
-          className="text-2xl hover:text-green-600 transition-colors bg-muted hover:bg-muted/80 rounded-full p-2"
+          className="text-2xl hover:text-green-600 bg-muted hover:bg-muted/80 rounded-full p-2 hover-lift ripple"
         >
           ←
         </button>
@@ -1355,14 +1355,14 @@ export default function GardenApp() {
           )}
         </div>
       </div>
-      <div className="flex-1 grid grid-cols-2 sm:grid-cols-3 gap-3 content-start overflow-y-auto p-2 min-h-0 max-h-96">
+      <div className="flex-1 grid grid-cols-2 sm:grid-cols-3 gap-3 content-start overflow-y-auto p-2 min-h-0 max-h-150">
         {shopItems.map((item, index) => (
           <div key={index} className="text-center">
-            <div className={`bg-muted rounded-lg p-3 mb-2 h-16 flex items-center justify-center transition-all duration-300 ${
-              purchasedItems.has(item.name) 
-                ? 'bg-green-200 scale-110 shadow-lg purchase-success' 
-                : 'hover:bg-muted/80'
-            }`}>
+                    <div className={`bg-muted rounded-lg p-3 mb-2 h-16 flex items-center justify-center hover-lift ${
+          purchasedItems.has(item.name) 
+            ? 'bg-green-200 scale-110 shadow-lg purchase-success celebration' 
+            : 'hover:bg-muted/80'
+        }`}>
               {item.icon ? (
                 <Image
                   src={item.icon}
@@ -1383,7 +1383,7 @@ export default function GardenApp() {
             <div className="text-xs text-muted-foreground mb-2">${item.price}</div>
             <Button
               size="sm"
-              className={`text-xs px-2 py-1 w-full transition-all duration-200 ${
+              className={`text-xs px-2 py-1 w-full ripple hover-scale ${
                 money >= item.price
                   ? "bg-green-600 hover:bg-green-700 text-white"
                   : "bg-gray-300 text-gray-500 cursor-not-allowed"
@@ -1448,7 +1448,7 @@ export default function GardenApp() {
           {gardenItems.map((item) => (
             <div
               key={item.id}
-              className={`absolute cursor-move hover:scale-110 transition-transform touch-draggable ${
+              className={`absolute cursor-move hover:scale-110 transition-transform touch-draggable hover-lift ${
                 droppingItems.has(item.id) ? 'garden-drop' : ''
               } ${
                 touchDragData?.data.type === "garden" && touchDragData.data.sourceId === item.id ? "ring-2 ring-blue-500 ring-opacity-75" : ""
@@ -1518,8 +1518,8 @@ export default function GardenApp() {
               onTouchMove={handleTouchMove}
               onTouchEnd={handleTouchEnd}
             >
-              <div className={`bg-background rounded-lg p-2 mb-1 h-10 flex items-center justify-center hover:bg-muted transition-all duration-300 border border-border ${
-                purchasedItems.has(item.name) ? "bg-green-100 shadow-lg item-highlight" : ""
+              <div className={`bg-background rounded-lg p-2 mb-1 h-10 flex items-center justify-center hover:bg-muted hover-scale border border-border ${
+                purchasedItems.has(item.name) ? "bg-green-100 shadow-lg item-highlight pulse-glow" : ""
               }`}>
                 {item.icon ? (
                   <Image
@@ -1580,7 +1580,7 @@ export default function GardenApp() {
           <div className="flex items-center gap-2 mb-4 flex-shrink-0">
             <button 
               onClick={closeVisitedGarden}
-              className="text-2xl hover:text-green-600 transition-colors bg-gray-100 hover:bg-gray-200 rounded-full p-2"
+              className="text-2xl hover:text-green-600 bg-gray-100 hover:bg-gray-200 rounded-full p-2 hover-lift ripple"
             >
               ←
             </button>
@@ -1662,7 +1662,7 @@ export default function GardenApp() {
         <div className="flex justify-between items-center mb-4 flex-shrink-0">
           <button 
             onClick={() => setCurrentScreen("garden")}
-            className="text-2xl hover:text-green-600 transition-colors bg-gray-100 hover:bg-gray-200 rounded-full p-2"
+            className="text-2xl hover:text-green-600 bg-gray-100 hover:bg-gray-200 rounded-full p-2 hover-lift ripple"
           >
             ←
           </button>
@@ -1725,7 +1725,7 @@ export default function GardenApp() {
               worldUsers.map((user) => (
                 <div 
                   key={user.id} 
-                  className="flex items-center justify-between p-3 bg-background rounded-lg border-2 border-border hover:border-green-300 transition-colors cursor-pointer"
+                  className="flex items-center justify-between p-3 bg-background rounded-lg border-2 border-border hover:border-green-300 transition-colors cursor-pointer card hover-lift"
                   onClick={() => visitGarden(user.id, user.username)}
                 >
                   <div className="flex items-center gap-4">
@@ -1759,7 +1759,7 @@ export default function GardenApp() {
       <div className="flex items-center gap-2 mb-4 flex-shrink-0">
         <button 
           onClick={() => setCurrentScreen("garden")} 
-          className="text-2xl hover:text-green-600 transition-colors bg-gray-100 hover:bg-gray-200 rounded-full p-2"
+          className="text-2xl hover:text-green-600 bg-gray-100 hover:bg-gray-200 rounded-full p-2 hover-lift ripple"
         >
           ←
         </button>
@@ -1780,10 +1780,10 @@ export default function GardenApp() {
       <h3 className="text-base font-black mb-3 flex-shrink-0 text-foreground">TASK LIST</h3>
       <div className="space-y-3 overflow-y-auto max-h-64">
         {tasks.map((task) => (
-          <div
-            key={task.id}
-            className={`flex items-center gap-4 p-3 rounded-lg ${task.completed ? "bg-green-100" : "bg-muted"}`}
-          >
+                      <div
+              key={task.id}
+              className={`flex items-center gap-4 p-3 rounded-lg card ${task.completed ? "bg-green-100" : "bg-muted"}`}
+            >
             {task.icon ? (
               <Image
                 src={task.icon}
@@ -1806,32 +1806,32 @@ export default function GardenApp() {
             </div>
             {!task.completed && task.progress < task.target && (
               <div className="flex gap-1">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="text-xs px-2 py-1 h-6 bg-transparent"
-                  onClick={() => updateTaskProgress(task.id, 1)}
-                >
-                  +1
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="text-xs px-2 py-1 h-6 bg-transparent"
-                  onClick={() => updateTaskProgress(task.id, 5)}
-                >
-                  +5
-                </Button>
+                                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="text-xs px-2 py-1 h-6 bg-transparent hover-scale ripple"
+                    onClick={() => updateTaskProgress(task.id, 1)}
+                  >
+                    +1
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="text-xs px-2 py-1 h-6 bg-transparent hover-scale ripple"
+                    onClick={() => updateTaskProgress(task.id, 5)}
+                  >
+                    +5
+                  </Button>
               </div>
             )}
             {!task.completed && task.progress >= task.target && (
-              <Button
-                size="sm"
-                className="bg-green-600 hover:bg-green-700 text-white font-bold text-xs px-3"
-                onClick={() => completeTask(task.id)}
-              >
-                COMPLETE
-              </Button>
+                              <Button
+                  size="sm"
+                  className="bg-green-600 hover:bg-green-700 text-white font-bold text-xs px-3 hover-scale ripple"
+                  onClick={() => completeTask(task.id)}
+                >
+                  COMPLETE
+                </Button>
             )}
             {task.completed && <div className="text-green-600 font-bold text-xs">✓ DONE</div>}
           </div>
@@ -1845,7 +1845,7 @@ export default function GardenApp() {
       <div className="flex items-center gap-2 mb-4 flex-shrink-0">
         <button 
           onClick={() => setCurrentScreen("world")}
-          className="text-2xl hover:text-green-600 transition-colors bg-gray-100 hover:bg-gray-200 rounded-full p-2"
+          className="text-2xl hover:text-green-600 bg-gray-100 hover:bg-gray-200 rounded-full p-2 hover-lift ripple"
         >
           ←
         </button>
@@ -1884,7 +1884,7 @@ export default function GardenApp() {
         <div className="space-y-3 mb-4 flex-shrink-0 max-h-40 overflow-y-auto">
           <div className="text-sm font-bold text-foreground sticky top-0 bg-background py-2">SEARCH RESULTS</div>
           {searchResults.map((user) => (
-            <div key={user.id} className="flex items-center justify-between p-3 bg-background rounded-lg border-2 border-border">
+            <div key={user.id} className="flex items-center justify-between p-3 bg-background rounded-lg border-2 border-border card hover-lift">
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
                   <span className="text-white font-bold text-xs">
@@ -1920,7 +1920,7 @@ export default function GardenApp() {
           </div>
         ) : (
           friends.map((friend, index) => (
-            <div key={index} className="flex items-center justify-between p-3 bg-background rounded-lg border-2 border-border">
+            <div key={index} className="flex items-center justify-between p-3 bg-background rounded-lg border-2 border-border card hover-lift">
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
                   <span className="text-white font-bold text-xs">😊</span>
@@ -1940,7 +1940,7 @@ export default function GardenApp() {
       <div className="flex items-center gap-2 mb-4 flex-shrink-0">
         <button 
           onClick={() => setCurrentScreen("garden")}
-          className="text-2xl hover:text-green-600 transition-colors bg-gray-100 hover:bg-gray-200 rounded-full p-2"
+          className="text-2xl hover:text-green-600 bg-gray-100 hover:bg-gray-200 rounded-full p-2 hover-lift ripple"
         >
           ←
         </button>
@@ -1966,8 +1966,8 @@ export default function GardenApp() {
                 <button
                   key={index}
                   onClick={() => updateProfilePicture(emoji)}
-                  className={`text-2xl p-1 rounded hover:bg-muted/80 transition-colors ${
-                    profilePicture === emoji ? "bg-green-200 ring-2 ring-green-500" : ""
+                  className={`text-2xl p-1 rounded hover:bg-muted/80 hover-scale ${
+                    profilePicture === emoji ? "bg-green-200 ring-2 ring-green-500 celebration" : ""
                   }`}
                 >
                   {emoji}
@@ -1985,7 +1985,7 @@ export default function GardenApp() {
           {tasks.map((task) => (
             <div
               key={task.id}
-              className={`flex items-center gap-3 p-3 rounded-lg ${task.completed ? "bg-green-100" : "bg-muted"}`}
+              className={`flex items-center gap-3 p-3 rounded-lg card ${task.completed ? "bg-green-100" : "bg-muted"}`}
             >
               {task.icon ? (
                 <Image
@@ -2012,7 +2012,7 @@ export default function GardenApp() {
                   <Button
                     size="sm"
                     variant="outline"
-                    className="text-xs px-2 py-1 h-6 bg-transparent"
+                    className="text-xs px-2 py-1 h-6 bg-transparent hover-scale ripple"
                     onClick={() => updateTaskProgress(task.id, 1)}
                   >
                     +1
@@ -2020,7 +2020,7 @@ export default function GardenApp() {
                   <Button
                     size="sm"
                     variant="outline"
-                    className="text-xs px-2 py-1 h-6 bg-transparent"
+                    className="text-xs px-2 py-1 h-6 bg-transparent hover-scale ripple"
                     onClick={() => updateTaskProgress(task.id, 5)}
                   >
                     +5
@@ -2030,7 +2030,7 @@ export default function GardenApp() {
               {!task.completed && task.progress >= task.target && (
                 <Button
                   size="sm"
-                  className="bg-green-600 hover:bg-green-700 text-white font-bold text-xs px-3"
+                  className="bg-green-600 hover:bg-green-700 text-white font-bold text-xs px-3 hover-scale ripple"
                   onClick={() => completeTask(task.id)}
                 >
                   COMPLETE
@@ -2046,7 +2046,7 @@ export default function GardenApp() {
       <div className="flex-shrink-0 mt-4">
         <Button 
           onClick={() => window.location.href = "/settings"}
-          className="w-full bg-secondary hover:bg-secondary/80 text-secondary-foreground font-bold py-3"
+          className="w-full bg-secondary hover:bg-secondary/80 text-secondary-foreground font-bold py-3 hover-lift ripple"
         >
           ⚙️ SETTINGS
         </Button>
@@ -2115,7 +2115,7 @@ export default function GardenApp() {
 
   return (
     <div className="w-full h-[800px] max-w-sm mx-auto bg-background rounded-3xl shadow-2xl overflow-hidden flex flex-col">
-      <div key={currentScreen} className="screen-enter flex-1 flex flex-col min-h-0 overflow-hidden">
+      <div key={currentScreen} className="screen-enter slide-in flex-1 flex flex-col min-h-0 overflow-hidden">
         {renderScreen()}
       </div>
       {currentScreen !== "tasks" && currentScreen !== "profile" && <BottomNav />}
