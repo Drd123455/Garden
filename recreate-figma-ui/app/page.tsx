@@ -5,7 +5,7 @@ import firebaseApp from "../firebase"
 
 import { useState, useEffect } from "react"
 import Image, { StaticImageData }  from "next/image"
-import { ShoppingBag, Sprout, Globe2, Settings } from "lucide-react"
+import { ShoppingBag, Sprout, Globe2, Settings, User } from "lucide-react"
 import XmasPng from "../Trees/Christmas.png"
 import PalmPng from "../Trees/Palm.png"
 import SprucePng from "../Trees/Spruce.png"
@@ -54,7 +54,7 @@ import {
 // Import task pool utilities
 import { getRandomTasks, getRandomTask, TaskTemplate } from "./utils/taskPool"
 
-type Screen = "shop" | "garden" | "world" | "tasks" | "add-friends"
+type Screen = "shop" | "garden" | "world" | "tasks" | "add-friends" | "profile"
 
 type GardenItem = {
   id: string
@@ -1301,11 +1301,12 @@ export default function GardenApp() {
               <div className={`pointer-events-none absolute -top-0.5 left-1/2 h-1 w-8 -translate-x-1/2 rounded-full transition-opacity ${isWorldActive ? "bg-green-500/90 opacity-100" : "opacity-0"}`} />
             </button>
             <button
-              onClick={() => window.location.href = "/settings"}
+              onClick={() => setCurrentScreen("profile")}
               className="group relative flex-1 items-center justify-center py-3 flex flex-col gap-1"
             >
-              <Settings className="h-5 w-5 transition-all text-gray-500 group-hover:text-gray-700" />
-              <span className="text-[11px] font-extrabold tracking-wide transition-colors text-gray-600">SETTINGS</span>
+              <User className="h-5 w-5 transition-all text-gray-500 group-hover:text-gray-700" />
+              <span className={`text-[11px] font-extrabold tracking-wide transition-colors ${currentScreen === "profile" ? "text-green-700" : "text-gray-600"}`}>PROFILE</span>
+              <div className={`pointer-events-none absolute -top-0.5 left-1/2 h-1 w-8 -translate-x-1/2 rounded-full transition-opacity ${currentScreen === "profile" ? "bg-green-500/90 opacity-100" : "opacity-0"}`} />
             </button>
           </div>
         </div>
@@ -1471,7 +1472,7 @@ export default function GardenApp() {
       >
         <div className="flex justify-between items-center mb-3 flex-shrink-0">
           <h2 className="text-lg font-black">INVENTORY</h2>
-          <span className="text-xs text-gray-600">Drag to place • Drop here to return • Touch & drag on mobile</span>
+          <span className="text-xs text-gray-600">Drag to place • Drop here to return</span>
         </div>
         <div className="grid grid-cols-4 gap-2 flex-1 overflow-y-auto p-2">
           {inventoryItems.map((item, index) => (
@@ -1882,6 +1883,97 @@ export default function GardenApp() {
     </div>
   )
 
+  const ProfileScreen = () => (
+    <div className="flex-1 flex flex-col p-4">
+      <div className="text-center mb-6 flex-shrink-0">
+        <div className="w-24 h-24 bg-green-500 mx-auto mb-4 relative rounded-full">
+          <div className="absolute inset-2 bg-white rounded-full"></div>
+          <div className="absolute top-6 left-6 w-4 h-4 bg-green-500 rounded-full"></div>
+        </div>
+        <h2 className="text-2xl font-black text-gray-800 mb-2">{username.toUpperCase()}</h2>
+        <p className="text-sm text-gray-600 mb-4">GARDEN MASTER</p>
+        <div className="bg-green-100 rounded-lg p-4 mb-4">
+          <div className="text-2xl font-bold text-green-600 mb-2">${money}</div>
+          <p className="text-xs text-gray-600">Current Balance</p>
+        </div>
+      </div>
+
+      {/* Tasks Section */}
+      <div className="mb-6 flex-shrink-0">
+        <h3 className="text-lg font-black mb-3 text-center">CURRENT TASKS</h3>
+        <div className="space-y-3 max-h-48 overflow-y-auto">
+          {tasks.map((task) => (
+            <div
+              key={task.id}
+              className={`flex items-center gap-3 p-3 rounded-lg ${task.completed ? "bg-green-100" : "bg-gray-50"}`}
+            >
+              {task.icon ? (
+                <Image
+                  src={task.icon}
+                  alt={task.name}
+                  width={24}
+                  height={24}
+                  className={`h-6 w-6 object-contain ${task.completed ? "opacity-50" : ""}`}
+                />
+              ) : (
+                <span className={`text-lg ${task.color} ${task.completed ? "opacity-50" : ""}`}>{task.emoji}</span>
+              )}
+              <div className="flex-1">
+                <div className={`text-xs font-bold mb-1 ${task.completed ? "line-through text-gray-500" : ""}`}>
+                  {task.name}
+                </div>
+                <div className="text-xs text-gray-600">
+                  {task.progress}/{task.target}
+                </div>
+                <div className="text-xs text-green-600 font-bold">${task.reward} reward</div>
+              </div>
+              {!task.completed && task.progress < task.target && (
+                <div className="flex gap-1">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="text-xs px-2 py-1 h-6 bg-transparent"
+                    onClick={() => updateTaskProgress(task.id, 1)}
+                  >
+                    +1
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="text-xs px-2 py-1 h-6 bg-transparent"
+                    onClick={() => updateTaskProgress(task.id, 5)}
+                  >
+                    +5
+                  </Button>
+                </div>
+              )}
+              {!task.completed && task.progress >= task.target && (
+                <Button
+                  size="sm"
+                  className="bg-green-600 hover:bg-green-700 text-white font-bold text-xs px-3"
+                  onClick={() => completeTask(task.id)}
+                >
+                  COMPLETE
+                </Button>
+              )}
+              {task.completed && <div className="text-green-600 font-bold text-xs">✓ DONE</div>}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Settings Button */}
+      <div className="flex-1 flex items-end">
+        <Button 
+          onClick={() => window.location.href = "/settings"}
+          className="w-full bg-gray-600 hover:bg-gray-700 text-white font-bold py-3"
+        >
+          ⚙️ SETTINGS
+        </Button>
+      </div>
+    </div>
+  )
+
      const addFriend = async (friendToAdd: (typeof nearbyFriends)[0]) => {
      if (!friends.some((friend) => friend.name === friendToAdd.name)) {
        try {
@@ -1913,6 +2005,8 @@ export default function GardenApp() {
         return <TasksScreen />
       case "add-friends":
         return <AddFriendsScreen />
+      case "profile":
+        return <ProfileScreen />
       default:
         return <ShopScreen />
     }
@@ -1944,20 +2038,9 @@ export default function GardenApp() {
       <div key={currentScreen} className="screen-enter flex-1 flex flex-col min-h-0">
         {renderScreen()}
       </div>
-      {currentScreen !== "tasks" && <BottomNav />}
+      {currentScreen !== "tasks" && currentScreen !== "profile" && <BottomNav />}
 
-      <div className="fixed top-4 right-4 flex flex-col gap-2 z-50">
-        <Button size="sm" onClick={() => setCurrentScreen("tasks")} className="text-xs">
-          TASK
-        </Button>
-        <Button 
-          size="sm" 
-          onClick={() => window.location.href = "/settings"} 
-          className="text-xs bg-gray-600 hover:bg-gray-700"
-        >
-          ⚙️
-        </Button>
-      </div>
+
     </div>
   )
 }
