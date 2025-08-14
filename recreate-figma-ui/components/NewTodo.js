@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import supabase from '../utils/supabase'
+import getSupabaseClient from '../utils/supabase'
 
 export default ({ reload }) => {
   const [title, setTitle] = useState('')
@@ -11,6 +11,8 @@ export default ({ reload }) => {
     
     setLoading(true)
     try {
+      const supabase = getSupabaseClient()
+      
       // Create a new task with default values matching your schema
       // Note: You'll need to get the actual userId from authentication
       const { error } = await supabase.from('tasks').insert({ 

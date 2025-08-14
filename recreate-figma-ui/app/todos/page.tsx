@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from 'react'
-import supabase from '../../utils/supabase'
+import getSupabaseClient from '../../utils/supabase'
 import NewTodo from '../../components/NewTodo'
 
 interface Task {
@@ -22,6 +22,7 @@ export default function TasksPage() {
   const fetchTasks = async () => {
     try {
       console.log('Attempting to fetch tasks from Supabase...')
+      const supabase = getSupabaseClient()
       console.log('Supabase client:', supabase)
       
       const { data, error: supabaseError } = await supabase.from('tasks').select('*')
