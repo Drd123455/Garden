@@ -238,7 +238,7 @@ export default function GardenApp() {
     }
   }, [])
 
-  const [currentScreen, setCurrentScreen] = useState<Screen>("shop")
+  const [currentScreen, setCurrentScreen] = useState<Screen>("garden")
   const [searchQuery, setSearchQuery] = useState("")
 
   // Database-loaded state (temporarily using hardcoded data)
@@ -1946,11 +1946,10 @@ export default function GardenApp() {
         >
           ←
         </button>
-        <div className="ml-auto flex items-center gap-3">
+        <div className="ml-auto">
           <div className="w-6 h-6 bg-green-600 rounded-full flex items-center justify-center text-white text-xs font-bold">
             {profilePicture}
           </div>
-          <div className="text-lg font-bold">${money}</div>
         </div>
       </div>
       <div className="text-center mb-6 flex-shrink-0">
@@ -1979,16 +1978,12 @@ export default function GardenApp() {
             </div>
           </div>
         </div>
-        <div className="bg-green-100 rounded-lg p-4 mb-4">
-          <div className="text-2xl font-bold text-green-600 mb-2">${money}</div>
-          <p className="text-xs text-gray-600">Current Balance</p>
-        </div>
       </div>
 
       {/* Tasks Section */}
       <div className="mb-6 flex-shrink-0">
         <h3 className="text-lg font-black mb-3 text-center">CURRENT TASKS</h3>
-        <div className="space-y-3 max-h-48 overflow-y-auto">
+        <div className="space-y-3 flex-1 overflow-y-auto">
           {tasks.map((task) => (
             <div
               key={task.id}
@@ -2095,7 +2090,7 @@ export default function GardenApp() {
       case "profile":
         return <ProfileScreen />
       default:
-        return <ShopScreen />
+        return <GardenScreen />
     }
   }
 
