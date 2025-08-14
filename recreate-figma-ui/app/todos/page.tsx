@@ -21,17 +21,23 @@ export default function TasksPage() {
 
   const fetchTasks = async () => {
     try {
+      console.log('Attempting to fetch tasks from Supabase...')
+      console.log('Supabase client:', supabase)
+      
       const { data, error: supabaseError } = await supabase.from('tasks').select('*')
       
       if (supabaseError) {
+        console.error('Supabase error:', supabaseError)
         throw supabaseError
       }
       
+      console.log('Successfully fetched tasks:', data)
       setTasks(data || [])
       setError(null)
     } catch (err) {
-      setError('Failed to fetch tasks')
       console.error('Error fetching tasks:', err)
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred'
+      setError(`Failed to fetch tasks: ${errorMessage}`)
     } finally {
       setLoading(false)
     }
