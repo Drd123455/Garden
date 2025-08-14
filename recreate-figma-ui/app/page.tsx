@@ -1417,9 +1417,7 @@ export default function GardenApp() {
         <div
           className="relative bg-green-400 border-2 border-green-600 rounded-lg overflow-hidden flex-shrink-0"
           style={{
-            height: "calc(50vh - 120px)",
-            minHeight: "200px",
-            maxHeight: "300px",
+            height: "280px",
             backgroundImage: `
               radial-gradient(circle at 25% 25%, #22c55e 2px, transparent 2px),
               radial-gradient(circle at 75% 75%, #16a34a 2px, transparent 2px),
@@ -2116,7 +2114,7 @@ export default function GardenApp() {
   }
 
   return (
-    <div className="w-full h-screen max-w-sm mx-auto bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col">
+    <div className="w-full h-[800px] max-w-sm mx-auto bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col">
       <div key={currentScreen} className="screen-enter flex-1 flex flex-col min-h-0 overflow-hidden">
         {renderScreen()}
       </div>

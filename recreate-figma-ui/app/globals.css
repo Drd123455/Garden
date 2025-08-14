@@ -1,11 +1,10 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
-/* Mobile viewport optimization */
+/* Fixed viewport - no responsive scaling */
 @viewport {
-  width: device-width;
+  width: 400px;
   initial-scale: 1;
-  maximum-scale: 1;
   user-scalable: no;
 }
 
@@ -177,9 +176,9 @@
     animation: screenFadeOut 0.2s ease both;
   }
 
-  /* Ensure consistent screen heights */
+  /* Fixed screen heights */
   .screen-container {
-    min-height: 100vh;
+    height: 800px;
     display: flex;
     flex-direction: column;
   }
@@ -196,7 +195,7 @@
   }
 
   .screen-body {
-    flex: 1;
+    height: 600px;
     overflow-y: auto;
   }
 
@@ -238,33 +237,9 @@
     }
   }
 
-  /* Mobile-specific optimizations */
-  .mobile-optimized {
-    -webkit-tap-highlight-color: transparent;
-    touch-action: manipulation;
-  }
 
-  /* Ensure perfect mobile sizing */
-  @media (max-width: 640px) {
-    .screen-container {
-      height: 100vh;
-      height: 100dvh; /* Dynamic viewport height for mobile */
-    }
-    
-    .mobile-header {
-      padding: 1rem;
-      margin-bottom: 0.75rem;
-    }
-    
-    .mobile-content {
-      padding: 0.75rem;
-    }
-    
-    .mobile-button {
-      padding: 0.5rem 1rem;
-      font-size: 0.75rem;
-    }
-  }
+
+
 }
 
 @keyframes purchaseSuccess {
