@@ -308,6 +308,12 @@ export default function GardenApp() {
     element: HTMLElement
   } | null>(null)
   const [isTouching, setIsTouching] = useState(false)
+  const [dragPreview, setDragPreview] = useState<{
+    show: boolean
+    x: number
+    y: number
+    item: any
+  } | null>(null)
 
   // Load shop items on component mount
   useEffect(() => {
@@ -1052,6 +1058,8 @@ export default function GardenApp() {
       data,
       startX: touch.clientX,
       startY: touch.clientY,
+      currentX: touch.clientX,
+      currentY: touch.clientY,
       element: e.currentTarget as HTMLElement
     })
     
@@ -1074,6 +1082,37 @@ export default function GardenApp() {
       currentX: touch.clientX,
       currentY: touch.clientY
     } : null)
+    
+    // Show drag preview
+    if (touchDragData.data.type === "inventory") {
+      const gardenArea = document.querySelector('[data-garden-area]')
+      if (gardenArea) {
+        const rect = gardenArea.getBoundingClientRect()
+        const x = touch.clientX - rect.left - 16
+        const y = touch.clientY - rect.top - 16
+        
+        setDragPreview({
+          show: true,
+          x: Math.max(0, Math.min(x, rect.width - 32)),
+          y: Math.max(0, Math.min(y, rect.height - 32)),
+          item: touchDragData.data.item
+        })
+      }
+    } else if (touchDragData.data.type === "garden") {
+      const gardenArea = document.querySelector('[data-garden-area]')
+      if (gardenArea) {
+        const rect = gardenArea.getBoundingClientRect()
+        const x = touch.clientX - rect.left - 16
+        const y = touch.clientY - rect.top - 16
+        
+        setDragPreview({
+          show: true,
+          x: Math.max(0, Math.min(x, rect.width - 32)),
+          y: Math.max(0, Math.min(y, rect.height - 32)),
+          item: touchDragData.data.item
+        })
+      }
+    }
   }
 
   const handleTouchEnd = async (e: React.TouchEvent) => {
@@ -1109,6 +1148,7 @@ export default function GardenApp() {
     // Clear touch data and reset visual feedback
     setTouchDragData(null)
     setIsTouching(false)
+    setDragPreview(null)
     
     // Reset element styling
     if (touchDragData?.element) {
@@ -1287,10 +1327,10 @@ export default function GardenApp() {
           )}
         </div>
       </div>
-      <div className="flex-1 grid grid-cols-3 gap-4 content-start overflow-y-auto">
+      <div className="flex-1 grid grid-cols-2 sm:grid-cols-3 gap-3 content-start overflow-y-auto p-2">
         {shopItems.map((item, index) => (
           <div key={index} className="text-center">
-            <div className={`bg-gray-100 rounded-lg p-4 mb-2 h-20 flex items-center justify-center transition-all duration-300 ${
+            <div className={`bg-gray-100 rounded-lg p-3 mb-2 h-16 flex items-center justify-center transition-all duration-300 ${
               purchasedItems.has(item.name) 
                 ? 'bg-green-200 scale-110 shadow-lg purchase-success' 
                 : 'hover:bg-gray-200'
@@ -1345,9 +1385,11 @@ export default function GardenApp() {
           <div></div>
         </div>
         <div
-          className="relative bg-green-400 border-2 border-green-600 rounded-lg overflow-hidden"
+          className="relative bg-green-400 border-2 border-green-600 rounded-lg overflow-hidden flex-shrink-0"
           style={{
-            height: "280px",
+            height: "calc(50vh - 120px)",
+            minHeight: "200px",
+            maxHeight: "300px",
             backgroundImage: `
               radial-gradient(circle at 25% 25%, #22c55e 2px, transparent 2px),
               radial-gradient(circle at 75% 75%, #16a34a 2px, transparent 2px),
@@ -1380,6 +1422,8 @@ export default function GardenApp() {
               key={item.id}
               className={`absolute cursor-move hover:scale-110 transition-transform touch-draggable ${
                 droppingItems.has(item.id) ? 'garden-drop' : ''
+              } ${
+                touchDragData?.data.type === "garden" && touchDragData.data.sourceId === item.id ? "ring-2 ring-blue-500 ring-opacity-75" : ""
               }`}
               style={{ left: item.x, top: item.y }}
               draggable
@@ -1395,6 +1439,28 @@ export default function GardenApp() {
               )}
             </div>
           ))}
+          
+          {/* Drag Preview for Mobile */}
+          {dragPreview && dragPreview.show && (
+            <div
+              className="absolute pointer-events-none z-50 drag-preview"
+              style={{ left: dragPreview.x, top: dragPreview.y }}
+            >
+              {dragPreview.item.icon ? (
+                <Image 
+                  src={dragPreview.item.icon} 
+                  alt={dragPreview.item.name} 
+                  width={40} 
+                  height={40} 
+                  className="h-10 w-10 object-contain drop-shadow-lg" 
+                />
+              ) : (
+                <span className={`text-2xl ${dragPreview.item.color} drop-shadow-lg`}>
+                  {dragPreview.item.emoji}
+                </span>
+              )}
+            </div>
+          )}
         </div>
       </div>
       <div
@@ -1407,7 +1473,7 @@ export default function GardenApp() {
           <h2 className="text-lg font-black">INVENTORY</h2>
           <span className="text-xs text-gray-600">Drag to place • Drop here to return • Touch & drag on mobile</span>
         </div>
-        <div className="grid grid-cols-4 gap-3 flex-1 overflow-y-auto">
+        <div className="grid grid-cols-4 gap-2 flex-1 overflow-y-auto p-2">
           {inventoryItems.map((item, index) => (
             <div
               key={item.id}
@@ -1415,6 +1481,8 @@ export default function GardenApp() {
                 item.quantity > 0 ? "cursor-grab active:cursor-grabbing" : "opacity-50"
               } ${
                 purchasedItems.has(item.name) ? "animate-pulse scale-105" : ""
+              } ${
+                touchDragData?.data.type === "inventory" && touchDragData.data.item.id === item.id ? "ring-2 ring-green-500 ring-opacity-75" : ""
               }`}
               draggable={item.quantity > 0}
               onDragStart={(e) => item.quantity > 0 && handleDragStart(e, { type: "inventory", item })}
@@ -1422,7 +1490,7 @@ export default function GardenApp() {
               onTouchMove={handleTouchMove}
               onTouchEnd={handleTouchEnd}
             >
-              <div className={`bg-white rounded-lg p-2 mb-1 h-12 flex items-center justify-center hover:bg-gray-100 transition-all duration-300 border ${
+              <div className={`bg-white rounded-lg p-2 mb-1 h-10 flex items-center justify-center hover:bg-gray-100 transition-all duration-300 border ${
                 purchasedItems.has(item.name) ? "bg-green-100 shadow-lg item-highlight" : ""
               }`}>
                 {item.icon ? (
@@ -1490,13 +1558,13 @@ export default function GardenApp() {
             </button>
             <div className="ml-auto text-lg font-bold">${money}</div>
           </div>
-          <div className="text-center mb-6 flex-shrink-0">
-            <div className="w-24 h-24 bg-green-500 mx-auto mb-2 relative rounded-full">
+          <div className="text-center mb-4 flex-shrink-0">
+            <div className="w-20 h-20 bg-green-500 mx-auto mb-2 relative rounded-full">
               <div className="absolute inset-2 bg-white rounded-full"></div>
-              <div className="absolute top-4 left-4 w-4 h-4 bg-green-500 rounded-full"></div>
+              <div className="absolute top-3 left-3 w-3 h-3 bg-green-500 rounded-full"></div>
             </div>
-            <h2 className="text-xl font-black">{visitedGarden.username.toUpperCase()}</h2>
-            <p className="text-sm text-gray-600">GARDEN</p>
+            <h2 className="text-lg font-black">{visitedGarden.username.toUpperCase()}</h2>
+            <p className="text-xs text-gray-600">GARDEN</p>
           </div>
           
           {/* Garden Grid */}
@@ -1564,18 +1632,18 @@ export default function GardenApp() {
           <span className="text-sm font-bold text-green-600">WORLD</span>
           <div></div>
         </div>
-        <div className="flex gap-2 mb-6 flex-shrink-0">
-          <Button className="bg-green-600 hover:bg-green-700 text-white font-bold px-6">GARDENS</Button>
+        <div className="flex flex-wrap gap-2 mb-4 flex-shrink-0">
+          <Button className="bg-green-600 hover:bg-green-700 text-white font-bold px-4 text-xs">GARDENS</Button>
           <Button
             variant="outline"
-            className="border-2 border-gray-300 font-bold bg-transparent"
+            className="border-2 border-gray-300 font-bold bg-transparent text-xs px-3"
             onClick={() => setCurrentScreen("add-friends")}
           >
             ADD FRIENDS
           </Button>
           <Button
             variant="outline"
-            className="border-2 border-gray-300 font-bold bg-transparent"
+            className="border-2 border-gray-300 font-bold bg-transparent text-xs px-3"
             onClick={() => {
               setHasLoadedWorld(false)
               loadWorldUsers()
@@ -1655,16 +1723,16 @@ export default function GardenApp() {
         </button>
         <div className="ml-auto text-lg font-bold">${money}</div>
       </div>
-      <div className="text-center mb-6 flex-shrink-0">
-        <div className="w-24 h-24 bg-red-500 mx-auto mb-2 relative">
+      <div className="text-center mb-4 flex-shrink-0">
+        <div className="w-20 h-20 bg-red-500 mx-auto mb-2 relative">
           <div className="absolute inset-2 bg-black"></div>
-          <div className="absolute top-4 left-4 w-4 h-4 bg-red-500"></div>
+          <div className="absolute top-3 left-3 w-3 h-3 bg-red-500"></div>
         </div>
-        <h2 className="text-xl font-black">{username.toUpperCase()}</h2>
-        <p className="text-sm text-gray-600">LONDON—BASILDON</p>
+        <h2 className="text-lg font-black">{username.toUpperCase()}</h2>
+        <p className="text-xs text-gray-600">LONDON—BASILDON</p>
       </div>
-      <h3 className="text-lg font-black mb-4 flex-shrink-0">TASK LIST</h3>
-      <div className="space-y-4 flex-1 overflow-y-auto">
+      <h3 className="text-base font-black mb-3 flex-shrink-0">TASK LIST</h3>
+      <div className="space-y-3 flex-1 overflow-y-auto">
         {tasks.map((task) => (
           <div
             key={task.id}
@@ -1738,8 +1806,8 @@ export default function GardenApp() {
         <div className="ml-auto text-lg font-bold">${money}</div>
       </div>
       
-      <div className="bg-green-100 rounded-lg p-4 mb-6 flex-shrink-0">
-        <div className="flex gap-2 mb-4">
+      <div className="bg-green-100 rounded-lg p-3 mb-4 flex-shrink-0">
+        <div className="flex flex-col gap-2 mb-3">
           <Input
             placeholder="Search for users by username..."
             value={friendSearchQuery}
@@ -1748,32 +1816,32 @@ export default function GardenApp() {
           />
           <Button 
             size="sm" 
-            className="bg-green-600 hover:bg-green-700 text-white"
+            className="bg-green-600 hover:bg-green-700 text-white text-xs"
             onClick={() => searchForUsers(friendSearchQuery)}
             disabled={!friendSearchQuery.trim() || isSearching}
           >
             {isSearching ? "..." : "🔍"}
           </Button>
         </div>
-        <div className="text-xs text-gray-600">
+        <div className="text-xs text-gray-600 text-center">
           Type a username and click search to find users to add as friends
         </div>
       </div>
 
       {/* Search Results */}
       {searchResults.length > 0 && (
-        <div className="space-y-4 mb-6 flex-shrink-0">
+        <div className="space-y-3 mb-4 flex-shrink-0">
           <div className="text-sm font-bold text-gray-700">SEARCH RESULTS</div>
           {searchResults.map((user) => (
             <div key={user.id} className="flex items-center justify-between p-3 bg-white rounded-lg border-2 border-gray-200">
-              <div className="flex items-center gap-4">
-                <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center">
-                  <span className="text-white font-bold text-sm">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
+                  <span className="text-white font-bold text-xs">
                     {user.username.charAt(0).toUpperCase()}
                   </span>
                 </div>
                 <div>
-                  <div className="font-bold text-sm">{user.username.toUpperCase()}</div>
+                  <div className="font-bold text-xs">{user.username.toUpperCase()}</div>
                   <div className="text-xs text-gray-600">
                     {user.gardenItems?.length || 0} garden items
                   </div>
@@ -1781,7 +1849,7 @@ export default function GardenApp() {
               </div>
               <Button
                 size="sm"
-                className="bg-green-600 hover:bg-green-700 text-white text-xs"
+                className="bg-green-600 hover:bg-green-700 text-white text-xs px-2"
                 onClick={() => addUserAsFriend(user.id, user.username)}
                 disabled={friends.some(f => f.name === user.username)}
               >
@@ -1793,18 +1861,18 @@ export default function GardenApp() {
       )}
 
       {/* Current Friends */}
-      <div className="space-y-4 flex-1 overflow-y-auto">
+      <div className="space-y-3 flex-1 overflow-y-auto">
         <div className="text-sm font-bold text-gray-700">CURRENT FRIENDS</div>
         {friends.length === 0 ? (
-          <div className="text-center py-4 text-gray-500 text-sm">
+          <div className="text-center py-4 text-gray-500 text-xs">
             No friends yet. Search for users above to add friends!
           </div>
         ) : (
           friends.map((friend, index) => (
             <div key={index} className="flex items-center justify-between p-3 bg-white rounded-lg border-2 border-gray-200">
-              <div className="flex items-center gap-4">
-                <span className={`text-2xl ${friend.color}`}>{friend.emoji}</span>
-                <span className="font-bold text-sm">{friend.name}</span>
+              <div className="flex items-center gap-3">
+                <span className={`text-xl ${friend.color}`}>{friend.emoji}</span>
+                <span className="font-bold text-xs">{friend.name}</span>
               </div>
               <span className="text-xs text-green-600 font-bold">♥ FRIEND</span>
             </div>
@@ -1872,8 +1940,8 @@ export default function GardenApp() {
   }
 
   return (
-    <div className="max-w-sm mx-auto bg-white rounded-3xl shadow-2xl overflow-hidden h-screen flex flex-col">
-      <div key={currentScreen} className="screen-enter flex-1 flex flex-col">
+    <div className="w-full h-screen max-w-sm mx-auto bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col">
+      <div key={currentScreen} className="screen-enter flex-1 flex flex-col min-h-0">
         {renderScreen()}
       </div>
       {currentScreen !== "tasks" && <BottomNav />}

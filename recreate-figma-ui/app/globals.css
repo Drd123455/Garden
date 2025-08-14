@@ -1,6 +1,14 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+/* Mobile viewport optimization */
+@viewport {
+  width: device-width;
+  initial-scale: 1;
+  maximum-scale: 1;
+  user-scalable: no;
+}
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
@@ -188,6 +196,51 @@
     -moz-user-select: none;
     -ms-user-select: none;
     user-select: none;
+  }
+
+  /* Drag preview styles */
+  .drag-preview {
+    filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
+    animation: dragPreview 0.2s ease-out;
+  }
+
+  @keyframes dragPreview {
+    0% {
+      opacity: 0;
+      transform: scale(0.8);
+    }
+    100% {
+      opacity: 0.7;
+      transform: scale(1);
+    }
+  }
+
+  /* Mobile-specific optimizations */
+  .mobile-optimized {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+
+  /* Ensure perfect mobile sizing */
+  @media (max-width: 640px) {
+    .screen-container {
+      height: 100vh;
+      height: 100dvh; /* Dynamic viewport height for mobile */
+    }
+    
+    .mobile-header {
+      padding: 1rem;
+      margin-bottom: 0.75rem;
+    }
+    
+    .mobile-content {
+      padding: 0.75rem;
+    }
+    
+    .mobile-button {
+      padding: 0.5rem 1rem;
+      font-size: 0.75rem;
+    }
   }
 }
 
