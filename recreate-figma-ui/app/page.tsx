@@ -1355,7 +1355,7 @@ export default function GardenApp() {
           )}
         </div>
       </div>
-      <div className="flex-1 grid grid-cols-2 sm:grid-cols-3 gap-3 content-start overflow-y-auto p-2">
+      <div className="flex-1 grid grid-cols-2 sm:grid-cols-3 gap-3 content-start overflow-y-auto p-2 min-h-0">
         {shopItems.map((item, index) => (
           <div key={index} className="text-center">
             <div className={`bg-gray-100 rounded-lg p-3 mb-2 h-16 flex items-center justify-center transition-all duration-300 ${
@@ -1694,8 +1694,8 @@ export default function GardenApp() {
             {isLoadingWorld ? "..." : "🔄"}
           </Button>
         </div>
-        <div className="flex-1 flex flex-col">
-          <div className="space-y-4 mb-6 flex-1 overflow-auto">
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <div className="space-y-4 mb-6 flex-1 overflow-y-auto">
             {isLoadingWorld ? (
               <div className="text-center py-8">
                 <div className="text-lg font-bold text-gray-600">Loading gardens...</div>
@@ -1883,8 +1883,8 @@ export default function GardenApp() {
 
       {/* Search Results */}
       {searchResults.length > 0 && (
-        <div className="space-y-3 mb-4 flex-shrink-0">
-          <div className="text-sm font-bold text-gray-700">SEARCH RESULTS</div>
+        <div className="space-y-3 mb-4 flex-shrink-0 max-h-48 overflow-y-auto">
+          <div className="text-sm font-bold text-gray-700 sticky top-0 bg-white py-2">SEARCH RESULTS</div>
           {searchResults.map((user) => (
             <div key={user.id} className="flex items-center justify-between p-3 bg-white rounded-lg border-2 border-gray-200">
               <div className="flex items-center gap-3">
@@ -1915,7 +1915,7 @@ export default function GardenApp() {
 
       {/* Current Friends */}
       <div className="space-y-3 flex-1 overflow-y-auto">
-        <div className="text-sm font-bold text-gray-700">CURRENT FRIENDS</div>
+        <div className="text-sm font-bold text-gray-700 sticky top-0 bg-white py-2">CURRENT FRIENDS</div>
         {friends.length === 0 ? (
           <div className="text-center py-4 text-gray-500 text-xs">
             No friends yet. Search for users above to add friends!
@@ -1963,7 +1963,7 @@ export default function GardenApp() {
           {/* Profile Picture Picker */}
           <div className="bg-gray-100 rounded-lg p-3 mb-3">
             <p className="text-xs text-gray-600 mb-2">Change Profile Picture</p>
-            <div className="grid grid-cols-8 gap-2">
+            <div className="grid grid-cols-8 gap-2 max-h-32 overflow-y-auto">
               {["😊", "😎", "🤠", "👻", "🐱", "🐶", "🦊", "🐸", "🐼", "🐨", "🦁", "🐯", "🐮", "🐷", "🐸", "🐙", "🦄", "🌈", "⭐", "🎮", "🎨", "🎭", "🎪", "🎯", "🎲", "🎸", "🎹", "🎺", "🎻", "🎼", "🎵", "🎶", "🎤", "🎧", "🎬", "🎭", "🎨", "🎪", "🎯", "🎲", "🎸", "🎹", "🎺", "🎻", "🎼", "🎵", "🎶", "🎤", "🎧", "🎬"].slice(0, 32).map((emoji, index) => (
                 <button
                   key={index}
@@ -2117,12 +2117,10 @@ export default function GardenApp() {
 
   return (
     <div className="w-full h-screen max-w-sm mx-auto bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col">
-      <div key={currentScreen} className="screen-enter flex-1 flex flex-col min-h-0">
+      <div key={currentScreen} className="screen-enter flex-1 flex flex-col min-h-0 overflow-hidden">
         {renderScreen()}
       </div>
       {currentScreen !== "tasks" && currentScreen !== "profile" && <BottomNav />}
-
-
     </div>
   )
 }
