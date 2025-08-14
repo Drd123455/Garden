@@ -1981,9 +1981,9 @@ export default function GardenApp() {
       </div>
 
       {/* Tasks Section */}
-      <div className="mb-6 flex-shrink-0">
-        <h3 className="text-lg font-black mb-3 text-center">CURRENT TASKS</h3>
-        <div className="space-y-3 flex-1 overflow-y-auto">
+      <div className="flex-1 flex flex-col min-h-0">
+        <h3 className="text-lg font-black mb-3 text-center flex-shrink-0">CURRENT TASKS</h3>
+        <div className="space-y-3 overflow-y-auto flex-1">
           {tasks.map((task) => (
             <div
               key={task.id}
@@ -2045,7 +2045,7 @@ export default function GardenApp() {
       </div>
 
       {/* Settings Button */}
-      <div className="flex-1 flex items-end">
+      <div className="flex-shrink-0 mt-4">
         <Button 
           onClick={() => window.location.href = "/settings"}
           className="w-full bg-gray-600 hover:bg-gray-700 text-white font-bold py-3"
