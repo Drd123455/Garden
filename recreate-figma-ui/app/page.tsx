@@ -1293,7 +1293,7 @@ export default function GardenApp() {
     const isWorldActive = currentScreen === "world" || currentScreen === "add-friends"
     return (
       <div className="px-4 pb-4 pt-2">
-        <div className="relative rounded-2xl border border-gray-200 bg-white/80 backdrop-blur-md shadow-[0_8px_24px_rgba(0,0,0,0.08)]">
+        <div className="relative rounded-2xl border border-border bg-background/80 backdrop-blur-md shadow-[0_8px_24px_rgba(0,0,0,0.08)]">
           <div className="flex">
             <button
               onClick={() => setCurrentScreen("shop")}
@@ -1338,11 +1338,11 @@ export default function GardenApp() {
       <div className="flex justify-between items-center mb-4 flex-shrink-0">
         <button 
           onClick={() => setCurrentScreen("garden")}
-          className="text-2xl hover:text-green-600 transition-colors bg-gray-100 hover:bg-gray-200 rounded-full p-2"
+          className="text-2xl hover:text-green-600 transition-colors bg-muted hover:bg-muted/80 rounded-full p-2"
         >
           ←
         </button>
-        <span className="text-sm font-bold">SHOP</span>
+        <span className="text-sm font-bold text-foreground">SHOP</span>
         <div className="relative">
           <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center text-white text-xs font-bold">
             {profilePicture}
@@ -1355,13 +1355,13 @@ export default function GardenApp() {
           )}
         </div>
       </div>
-      <div className="flex-1 grid grid-cols-2 sm:grid-cols-3 gap-3 content-start overflow-y-auto p-2 min-h-0">
+      <div className="flex-1 grid grid-cols-2 sm:grid-cols-3 gap-3 content-start overflow-y-auto p-2 min-h-0 max-h-96">
         {shopItems.map((item, index) => (
           <div key={index} className="text-center">
-            <div className={`bg-gray-100 rounded-lg p-3 mb-2 h-16 flex items-center justify-center transition-all duration-300 ${
+            <div className={`bg-muted rounded-lg p-3 mb-2 h-16 flex items-center justify-center transition-all duration-300 ${
               purchasedItems.has(item.name) 
                 ? 'bg-green-200 scale-110 shadow-lg purchase-success' 
-                : 'hover:bg-gray-200'
+                : 'hover:bg-muted/80'
             }`}>
               {item.icon ? (
                 <Image
@@ -1379,8 +1379,8 @@ export default function GardenApp() {
                 }`}>{item.emoji}</span>
               )}
             </div>
-            <div className="text-xs font-bold mb-1">{item.name}</div>
-            <div className="text-xs text-gray-600 mb-2">${item.price}</div>
+            <div className="text-xs font-bold mb-1 text-foreground">{item.name}</div>
+            <div className="text-xs text-muted-foreground mb-2">${item.price}</div>
             <Button
               size="sm"
               className={`text-xs px-2 py-1 w-full transition-all duration-200 ${
@@ -1411,7 +1411,7 @@ export default function GardenApp() {
           <div className="w-6 h-6 bg-green-600 rounded-full flex items-center justify-center text-white text-xs font-bold">
             {profilePicture}
           </div>
-          <span className="text-sm font-bold text-green-600">Garden</span>
+          <span className="text-sm font-bold text-foreground">Garden</span>
           <div></div>
         </div>
         <div
@@ -1492,14 +1492,14 @@ export default function GardenApp() {
         </div>
       </div>
       <div
-        className="bg-gray-50 border-t-2 border-gray-200 p-4 flex-1 border-2 border-dashed border-transparent hover:border-green-300 transition-colors"
+        className="bg-muted/30 border-t-2 border-border p-4 flex-1 border-2 border-dashed border-transparent hover:border-green-300 transition-colors"
         onDragOver={handleDragOver}
         onDrop={handleInventoryDrop}
         data-inventory-area
       >
         <div className="flex justify-between items-center mb-3 flex-shrink-0">
-          <h2 className="text-lg font-black">INVENTORY</h2>
-          <span className="text-xs text-gray-600">Drag to place • Drop here to return</span>
+          <h2 className="text-lg font-black text-foreground">INVENTORY</h2>
+          <span className="text-xs text-muted-foreground">Drag to place • Drop here to return</span>
         </div>
         <div className="grid grid-cols-4 gap-2 flex-1 overflow-y-auto p-2">
           {inventoryItems.map((item, index) => (
@@ -1518,7 +1518,7 @@ export default function GardenApp() {
               onTouchMove={handleTouchMove}
               onTouchEnd={handleTouchEnd}
             >
-              <div className={`bg-white rounded-lg p-2 mb-1 h-10 flex items-center justify-center hover:bg-gray-100 transition-all duration-300 border ${
+              <div className={`bg-background rounded-lg p-2 mb-1 h-10 flex items-center justify-center hover:bg-muted transition-all duration-300 border border-border ${
                 purchasedItems.has(item.name) ? "bg-green-100 shadow-lg item-highlight" : ""
               }`}>
                 {item.icon ? (
@@ -1537,8 +1537,8 @@ export default function GardenApp() {
                   }`}>{item.emoji}</span>
                 )}
               </div>
-              <div className="text-[10px] font-bold mb-1 leading-tight">{item.name}</div>
-              <div className={`text-[10px] ${item.quantity > 0 ? "text-gray-600" : "text-red-500"}`}>
+              <div className="text-[10px] font-bold mb-1 leading-tight text-foreground">{item.name}</div>
+              <div className={`text-[10px] ${item.quantity > 0 ? "text-muted-foreground" : "text-red-500"}`}>
                 {item.quantity}
               </div>
               {purchasedItems.has(item.name) && (
@@ -1595,8 +1595,8 @@ export default function GardenApp() {
             <div className="w-20 h-20 bg-green-500 mx-auto mb-2 relative rounded-full flex items-center justify-center">
               <span className="text-4xl">😊</span>
             </div>
-            <h2 className="text-lg font-black">{visitedGarden.username.toUpperCase()}</h2>
-            <p className="text-xs text-gray-600">GARDEN</p>
+            <h2 className="text-lg font-black text-foreground">{visitedGarden.username.toUpperCase()}</h2>
+            <p className="text-xs text-muted-foreground">GARDEN</p>
           </div>
           
           {/* Garden Grid */}
@@ -1649,7 +1649,7 @@ export default function GardenApp() {
           </div>
           
           <div className="mt-4 text-center flex-shrink-0">
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-muted-foreground">
               {visitedGarden.gardenItems.length} items in this garden
             </p>
           </div>
@@ -1666,7 +1666,7 @@ export default function GardenApp() {
           >
             ←
           </button>
-          <span className="text-sm font-bold text-green-600">WORLD</span>
+          <span className="text-sm font-bold text-foreground">WORLD</span>
           <div className="w-6 h-6 bg-green-600 rounded-full flex items-center justify-center text-white text-xs font-bold">
             {profilePicture}
           </div>
@@ -1693,11 +1693,11 @@ export default function GardenApp() {
           </Button>
         </div>
         <div className="flex-1 flex flex-col overflow-hidden">
-          <div className="space-y-4 mb-6 flex-1 overflow-y-auto">
+          <div className="space-y-4 mb-6 overflow-y-auto max-h-80">
             {isLoadingWorld ? (
-              <div className="text-center py-8">
-                <div className="text-lg font-bold text-gray-600">Loading gardens...</div>
-                <div className="text-sm text-gray-500 mt-2">This may take a moment</div>
+                          <div className="text-center py-8">
+              <div className="text-lg font-bold text-foreground">Loading gardens...</div>
+              <div className="text-sm text-muted-foreground mt-2">This may take a moment</div>
                 <Button 
                   onClick={handleRetry}
                   className="mt-4 bg-green-600 hover:bg-green-700 text-white text-sm"
@@ -1706,9 +1706,9 @@ export default function GardenApp() {
                 </Button>
               </div>
             ) : worldError ? (
-              <div className="text-center py-8">
-                <div className="text-lg font-bold text-red-600">Error loading gardens</div>
-                <div className="text-sm text-gray-500 mt-2">{worldError}</div>
+                          <div className="text-center py-8">
+              <div className="text-lg font-bold text-red-600">Error loading gardens</div>
+              <div className="text-sm text-muted-foreground mt-2">{worldError}</div>
                 <Button 
                   onClick={handleRetry}
                   className="mt-4 bg-green-600 hover:bg-green-700 text-white text-sm"
@@ -1717,15 +1717,15 @@ export default function GardenApp() {
                 </Button>
               </div>
             ) : worldUsers.length === 0 ? (
-              <div className="text-center py-8">
-                <div className="text-lg font-bold text-gray-600">No gardens to visit yet</div>
-                <div className="text-sm text-gray-500 mt-2">Other users need to create accounts and add items to their gardens</div>
+                          <div className="text-center py-8">
+              <div className="text-lg font-bold text-foreground">No gardens to visit yet</div>
+              <div className="text-sm text-muted-foreground mt-2">Other users need to create accounts and add items to their gardens</div>
               </div>
             ) : (
               worldUsers.map((user) => (
                 <div 
                   key={user.id} 
-                  className="flex items-center justify-between p-3 bg-white rounded-lg border-2 border-gray-200 hover:border-green-300 transition-colors cursor-pointer"
+                  className="flex items-center justify-between p-3 bg-background rounded-lg border-2 border-border hover:border-green-300 transition-colors cursor-pointer"
                   onClick={() => visitGarden(user.id, user.username)}
                 >
                   <div className="flex items-center gap-4">
@@ -1735,15 +1735,15 @@ export default function GardenApp() {
                       </span>
                     </div>
                     <div>
-                      <div className="font-bold text-sm">{user.username.toUpperCase()}</div>
-                      <div className="text-xs text-gray-600">
+                      <div className="font-bold text-sm text-foreground">{user.username.toUpperCase()}</div>
+                      <div className="text-xs text-muted-foreground">
                         {user.gardenItems?.length || 0} items in garden
                       </div>
                     </div>
                   </div>
                   <div className="text-right">
                     <div className="text-xs text-green-600 font-bold">${user.money}</div>
-                    <div className="text-xs text-gray-500">VISIT →</div>
+                    <div className="text-xs text-muted-foreground">VISIT →</div>
                   </div>
                 </div>
               ))
@@ -1774,15 +1774,15 @@ export default function GardenApp() {
         <div className="w-20 h-20 bg-green-500 mx-auto mb-2 relative rounded-full flex items-center justify-center">
           <span className="text-4xl">{profilePicture}</span>
         </div>
-        <h2 className="text-lg font-black">{username.toUpperCase()}</h2>
-        <p className="text-xs text-gray-600">LONDON—BASILDON</p>
+        <h2 className="text-lg font-black text-foreground">{username.toUpperCase()}</h2>
+        <p className="text-xs text-muted-foreground">LONDON—BASILDON</p>
       </div>
-      <h3 className="text-base font-black mb-3 flex-shrink-0">TASK LIST</h3>
-      <div className="space-y-3 flex-1 overflow-y-auto">
+      <h3 className="text-base font-black mb-3 flex-shrink-0 text-foreground">TASK LIST</h3>
+      <div className="space-y-3 overflow-y-auto max-h-64">
         {tasks.map((task) => (
           <div
             key={task.id}
-            className={`flex items-center gap-4 p-3 rounded-lg ${task.completed ? "bg-green-100" : "bg-gray-50"}`}
+            className={`flex items-center gap-4 p-3 rounded-lg ${task.completed ? "bg-green-100" : "bg-muted"}`}
           >
             {task.icon ? (
               <Image
@@ -1874,17 +1874,17 @@ export default function GardenApp() {
             {isSearching ? "..." : "🔍"}
           </Button>
         </div>
-        <div className="text-xs text-gray-600 text-center">
+        <div className="text-xs text-muted-foreground text-center">
           Type a username and click search to find users to add as friends
         </div>
       </div>
 
       {/* Search Results */}
       {searchResults.length > 0 && (
-        <div className="space-y-3 mb-4 flex-shrink-0 max-h-48 overflow-y-auto">
-          <div className="text-sm font-bold text-gray-700 sticky top-0 bg-white py-2">SEARCH RESULTS</div>
+        <div className="space-y-3 mb-4 flex-shrink-0 max-h-40 overflow-y-auto">
+          <div className="text-sm font-bold text-foreground sticky top-0 bg-background py-2">SEARCH RESULTS</div>
           {searchResults.map((user) => (
-            <div key={user.id} className="flex items-center justify-between p-3 bg-white rounded-lg border-2 border-gray-200">
+            <div key={user.id} className="flex items-center justify-between p-3 bg-background rounded-lg border-2 border-border">
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
                   <span className="text-white font-bold text-xs">
@@ -1892,8 +1892,8 @@ export default function GardenApp() {
                   </span>
                 </div>
                 <div>
-                  <div className="font-bold text-xs">{user.username.toUpperCase()}</div>
-                  <div className="text-xs text-gray-600">
+                  <div className="font-bold text-xs text-foreground">{user.username.toUpperCase()}</div>
+                  <div className="text-xs text-muted-foreground">
                     {user.gardenItems?.length || 0} garden items
                   </div>
                 </div>
@@ -1912,20 +1912,20 @@ export default function GardenApp() {
       )}
 
       {/* Current Friends */}
-      <div className="space-y-3 flex-1 overflow-y-auto">
-        <div className="text-sm font-bold text-gray-700 sticky top-0 bg-white py-2">CURRENT FRIENDS</div>
+      <div className="space-y-3 overflow-y-auto max-h-48">
+        <div className="text-sm font-bold text-foreground sticky top-0 bg-background py-2">CURRENT FRIENDS</div>
         {friends.length === 0 ? (
-          <div className="text-center py-4 text-gray-500 text-xs">
+          <div className="text-center py-4 text-muted-foreground text-xs">
             No friends yet. Search for users above to add friends!
           </div>
         ) : (
           friends.map((friend, index) => (
-            <div key={index} className="flex items-center justify-between p-3 bg-white rounded-lg border-2 border-gray-200">
+            <div key={index} className="flex items-center justify-between p-3 bg-background rounded-lg border-2 border-border">
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
                   <span className="text-white font-bold text-xs">😊</span>
                 </div>
-                <span className="font-bold text-xs">{friend.name}</span>
+                <span className="font-bold text-xs text-foreground">{friend.name}</span>
               </div>
               <span className="text-xs text-green-600 font-bold">♥ FRIEND</span>
             </div>
@@ -1955,18 +1955,18 @@ export default function GardenApp() {
           <span className="text-6xl">{profilePicture}</span>
         </div>
         <div className="mb-4">
-          <h2 className="text-2xl font-black text-gray-800 mb-2">{username.toUpperCase()}</h2>
-          <p className="text-sm text-gray-600 mb-3">GARDEN MASTER</p>
+          <h2 className="text-2xl font-black text-foreground mb-2">{username.toUpperCase()}</h2>
+          <p className="text-sm text-muted-foreground mb-3">GARDEN MASTER</p>
           
           {/* Profile Picture Picker */}
-          <div className="bg-gray-100 rounded-lg p-3 mb-3">
-            <p className="text-xs text-gray-600 mb-2">Change Profile Picture</p>
+          <div className="bg-muted rounded-lg p-3 mb-3">
+            <p className="text-xs text-muted-foreground mb-2">Change Profile Picture</p>
             <div className="grid grid-cols-8 gap-2 max-h-32 overflow-y-auto">
               {["😊", "😎", "🤠", "👻", "🐱", "🐶", "🦊", "🐸", "🐼", "🐨", "🦁", "🐯", "🐮", "🐷", "🐸", "🐙", "🦄", "🌈", "⭐", "🎮", "🎨", "🎭", "🎪", "🎯", "🎲", "🎸", "🎹", "🎺", "🎻", "🎼", "🎵", "🎶", "🎤", "🎧", "🎬", "🎭", "🎨", "🎪", "🎯", "🎲", "🎸", "🎹", "🎺", "🎻", "🎼", "🎵", "🎶", "🎤", "🎧", "🎬"].slice(0, 32).map((emoji, index) => (
                 <button
                   key={index}
                   onClick={() => updateProfilePicture(emoji)}
-                  className={`text-2xl p-1 rounded hover:bg-gray-200 transition-colors ${
+                  className={`text-2xl p-1 rounded hover:bg-muted/80 transition-colors ${
                     profilePicture === emoji ? "bg-green-200 ring-2 ring-green-500" : ""
                   }`}
                 >
@@ -1979,13 +1979,13 @@ export default function GardenApp() {
       </div>
 
       {/* Tasks Section */}
-      <div className="flex-1 flex flex-col min-h-0">
-        <h3 className="text-lg font-black mb-3 text-center flex-shrink-0">CURRENT TASKS</h3>
-        <div className="space-y-3 overflow-y-auto flex-1">
+      <div className="flex-shrink-0">
+        <h3 className="text-lg font-black mb-3 text-center text-foreground">CURRENT TASKS</h3>
+        <div className="space-y-3 overflow-y-auto max-h-48">
           {tasks.map((task) => (
             <div
               key={task.id}
-              className={`flex items-center gap-3 p-3 rounded-lg ${task.completed ? "bg-green-100" : "bg-gray-50"}`}
+              className={`flex items-center gap-3 p-3 rounded-lg ${task.completed ? "bg-green-100" : "bg-muted"}`}
             >
               {task.icon ? (
                 <Image
@@ -1999,10 +1999,10 @@ export default function GardenApp() {
                 <span className={`text-lg ${task.color} ${task.completed ? "opacity-50" : ""}`}>{task.emoji}</span>
               )}
               <div className="flex-1">
-                <div className={`text-xs font-bold mb-1 ${task.completed ? "line-through text-gray-500" : ""}`}>
+                <div className={`text-xs font-bold mb-1 ${task.completed ? "line-through text-muted-foreground" : "text-foreground"}`}>
                   {task.name}
                 </div>
-                <div className="text-xs text-gray-600">
+                <div className="text-xs text-muted-foreground">
                   {task.progress}/{task.target}
                 </div>
                 <div className="text-xs text-green-600 font-bold">${task.reward} reward</div>
@@ -2046,7 +2046,7 @@ export default function GardenApp() {
       <div className="flex-shrink-0 mt-4">
         <Button 
           onClick={() => window.location.href = "/settings"}
-          className="w-full bg-gray-600 hover:bg-gray-700 text-white font-bold py-3"
+          className="w-full bg-secondary hover:bg-secondary/80 text-secondary-foreground font-bold py-3"
         >
           ⚙️ SETTINGS
         </Button>
@@ -2114,7 +2114,7 @@ export default function GardenApp() {
   }
 
   return (
-    <div className="w-full h-[800px] max-w-sm mx-auto bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col">
+    <div className="w-full h-[800px] max-w-sm mx-auto bg-background rounded-3xl shadow-2xl overflow-hidden flex flex-col">
       <div key={currentScreen} className="screen-enter flex-1 flex flex-col min-h-0 overflow-hidden">
         {renderScreen()}
       </div>

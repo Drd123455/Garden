@@ -153,15 +153,15 @@
 
 @layer components {
   .purchase-success {
-    animation: purchaseSuccess 0.6s ease-out;
+    animation: purchaseSuccess 0.3s ease-out;
   }
   
   .money-change {
-    animation: moneyChange 0.8s ease-out;
+    animation: moneyChange 0.5s ease-out;
   }
   
   .item-highlight {
-    animation: itemHighlight 1s ease-in-out;
+    animation: itemHighlight 0.6s ease-in-out;
   }
   
   .garden-drop {
@@ -248,8 +248,8 @@
     box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7);
   }
   50% {
-    transform: scale(1.1);
-    box-shadow: 0 0 0 10px rgba(34, 197, 94, 0.4);
+    transform: scale(1.05);
+    box-shadow: 0 0 0 6px rgba(34, 197, 94, 0.4);
   }
   100% {
     transform: scale(1);
@@ -260,15 +260,15 @@
 @keyframes moneyChange {
   0% {
     opacity: 0;
-    transform: translateY(0) scale(0.8);
+    transform: translateY(0) scale(0.9);
   }
   50% {
     opacity: 1;
-    transform: translateY(-10px) scale(1.1);
+    transform: translateY(-8px) scale(1.05);
   }
   100% {
     opacity: 0;
-    transform: translateY(-20px) scale(0.9);
+    transform: translateY(-16px) scale(0.95);
   }
 }
 
@@ -277,7 +277,7 @@
     background-color: rgb(34 197 94 / 0.1);
   }
   50% {
-    background-color: rgb(34 197 94 / 0.3);
+    background-color: rgb(34 197 94 / 0.2);
   }
   100% {
     background-color: rgb(34 197 94 / 0.1);
