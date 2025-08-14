@@ -1,25 +1,27 @@
 import { useState } from 'react'
-import { createClient } from '@supabase/supabase-js'
+import supabase from '../utils/supabase'
 
 export default ({ reload }) => {
   const [title, setTitle] = useState('')
   const [loading, setLoading] = useState(false)
 
-  const addTodo = async (e) => {
+  const addTask = async (e) => {
     e.preventDefault()
     if (!title.trim()) return
     
     setLoading(true)
     try {
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-      const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-      
-      if (!supabaseUrl || !supabaseKey) {
-        throw new Error('Supabase configuration is missing')
-      }
-
-      const supabase = createClient(supabaseUrl, supabaseKey)
-      const { error } = await supabase.from('todos').insert({ title: title.trim() })
+      // Create a new task with default values matching your schema
+      // Note: You'll need to get the actual userId from authentication
+      const { error } = await supabase.from('tasks').insert({ 
+        name: title.trim(),
+        progress: 0,
+        target: 1, // Default target
+        color: '#3B82F6', // Default blue color
+        reward: 10, // Default reward
+        completed: false,
+        userId: '00000000-0000-0000-0000-000000000000' // Placeholder - replace with actual user ID
+      })
       
       if (error) {
         throw error
@@ -28,19 +30,19 @@ export default ({ reload }) => {
       reload()
       setTitle('')
     } catch (err) {
-      console.error('Error adding todo:', err)
-      alert('Failed to add todo. Please try again.')
+      console.error('Error adding task:', err)
+      alert('Failed to add task. Please try again.')
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <form onSubmit={addTodo} className="flex gap-2">
+    <form onSubmit={addTask} className="flex gap-2">
       <input 
         value={title} 
         onChange={(e) => setTitle(e.target.value)}
-        placeholder="Enter a new todo..."
+        placeholder="Enter a new task..."
         className="flex-1 px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
         disabled={loading}
       />
@@ -49,7 +51,7 @@ export default ({ reload }) => {
         disabled={loading || !title.trim()}
         className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
       >
-        {loading ? 'Adding...' : 'Add Todo'}
+        {loading ? 'Adding...' : 'Add Task'}
       </button>
     </form>
   )
