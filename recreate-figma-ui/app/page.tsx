@@ -230,6 +230,12 @@ export default function GardenApp() {
         localStorage.removeItem("currentUser")
       }
     }
+
+    // Load profile picture from localStorage
+    const savedProfilePicture = localStorage.getItem("profilePicture")
+    if (savedProfilePicture) {
+      setProfilePicture(savedProfilePicture)
+    }
   }, [])
 
   const [currentScreen, setCurrentScreen] = useState<Screen>("shop")
@@ -314,6 +320,19 @@ export default function GardenApp() {
     y: number
     item: any
   } | null>(null)
+
+  // Profile picture state
+  const [profilePicture, setProfilePicture] = useState<string>("😊")
+
+  // Function to update profile picture
+  const updateProfilePicture = async (emoji: string) => {
+    setProfilePicture(emoji)
+    // Save to localStorage for persistence
+    localStorage.setItem("profilePicture", emoji)
+    
+    // TODO: Save to database when user profile update action is implemented
+    // await updateUserProfilePictureAction(currentUser.id, emoji)
+  }
 
   // Load shop items on component mount
   useEffect(() => {
@@ -1317,9 +1336,17 @@ export default function GardenApp() {
   const ShopScreen = () => (
     <div className="flex-1 flex flex-col p-4">
       <div className="flex justify-between items-center mb-4 flex-shrink-0">
-        <div className="w-6 h-6 bg-green-600 rounded-full"></div>
+        <button 
+          onClick={() => setCurrentScreen("garden")}
+          className="text-2xl hover:text-green-600 transition-colors bg-gray-100 hover:bg-gray-200 rounded-full p-2"
+        >
+          ←
+        </button>
         <span className="text-sm font-bold">SHOP</span>
         <div className="relative">
+          <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center text-white text-xs font-bold">
+            {profilePicture}
+          </div>
           <span className="text-sm font-bold text-green-600">${money}</span>
           {moneyAnimation.show && (
             <div className="absolute -top-6 left-0 text-sm font-bold text-red-500 money-change">
@@ -1381,7 +1408,9 @@ export default function GardenApp() {
     <div className="flex-1 flex flex-col">
       <div className="p-4 pb-2 flex-shrink-0">
         <div className="flex justify-between items-center mb-4">
-          <div className="w-6 h-6 bg-green-600 rounded-full"></div>
+          <div className="w-6 h-6 bg-green-600 rounded-full flex items-center justify-center text-white text-xs font-bold">
+            {profilePicture}
+          </div>
           <span className="text-sm font-bold text-green-600">Garden</span>
           <div></div>
         </div>
@@ -1553,16 +1582,20 @@ export default function GardenApp() {
           <div className="flex items-center gap-2 mb-4 flex-shrink-0">
             <button 
               onClick={closeVisitedGarden}
-              className="text-xl hover:text-green-600 transition-colors"
+              className="text-2xl hover:text-green-600 transition-colors bg-gray-100 hover:bg-gray-200 rounded-full p-2"
             >
               ←
             </button>
-            <div className="ml-auto text-lg font-bold">${money}</div>
+            <div className="ml-auto flex items-center gap-3">
+          <div className="w-6 h-6 bg-green-600 rounded-full flex items-center justify-center text-white text-xs font-bold">
+            {profilePicture}
+          </div>
+          <div className="text-lg font-bold">${money}</div>
+        </div>
           </div>
           <div className="text-center mb-4 flex-shrink-0">
-            <div className="w-20 h-20 bg-green-500 mx-auto mb-2 relative rounded-full">
-              <div className="absolute inset-2 bg-white rounded-full"></div>
-              <div className="absolute top-3 left-3 w-3 h-3 bg-green-500 rounded-full"></div>
+            <div className="w-20 h-20 bg-green-500 mx-auto mb-2 relative rounded-full flex items-center justify-center">
+              <span className="text-4xl">😊</span>
             </div>
             <h2 className="text-lg font-black">{visitedGarden.username.toUpperCase()}</h2>
             <p className="text-xs text-gray-600">GARDEN</p>
@@ -1629,9 +1662,16 @@ export default function GardenApp() {
     return (
       <div className="flex-1 flex flex-col p-4">
         <div className="flex justify-between items-center mb-4 flex-shrink-0">
-          <div className="w-6 h-6 bg-green-600 rounded-full"></div>
+          <button 
+            onClick={() => setCurrentScreen("garden")}
+            className="text-2xl hover:text-green-600 transition-colors bg-gray-100 hover:bg-gray-200 rounded-full p-2"
+          >
+            ←
+          </button>
           <span className="text-sm font-bold text-green-600">WORLD</span>
-          <div></div>
+          <div className="w-6 h-6 bg-green-600 rounded-full flex items-center justify-center text-white text-xs font-bold">
+            {profilePicture}
+          </div>
         </div>
         <div className="flex flex-wrap gap-2 mb-4 flex-shrink-0">
           <Button className="bg-green-600 hover:bg-green-700 text-white font-bold px-4 text-xs">GARDENS</Button>
@@ -1693,7 +1733,7 @@ export default function GardenApp() {
                   <div className="flex items-center gap-4">
                     <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center">
                       <span className="text-white font-bold text-lg">
-                        {user.username.charAt(0).toUpperCase()}
+                        😊
                       </span>
                     </div>
                     <div>
@@ -1719,15 +1759,22 @@ export default function GardenApp() {
   const TasksScreen = () => (
     <div className="flex-1 flex flex-col p-4">
       <div className="flex items-center gap-2 mb-4 flex-shrink-0">
-        <button onClick={() => setCurrentScreen("garden")} className="text-xl">
+        <button 
+          onClick={() => setCurrentScreen("garden")} 
+          className="text-2xl hover:text-green-600 transition-colors bg-gray-100 hover:bg-gray-200 rounded-full p-2"
+        >
           ←
         </button>
-        <div className="ml-auto text-lg font-bold">${money}</div>
+        <div className="ml-auto flex items-center gap-3">
+          <div className="w-6 h-6 bg-green-600 rounded-full flex items-center justify-center text-white text-xs font-bold">
+            {profilePicture}
+          </div>
+          <div className="text-lg font-bold">${money}</div>
+        </div>
       </div>
       <div className="text-center mb-4 flex-shrink-0">
-        <div className="w-20 h-20 bg-red-500 mx-auto mb-2 relative">
-          <div className="absolute inset-2 bg-black"></div>
-          <div className="absolute top-3 left-3 w-3 h-3 bg-red-500"></div>
+        <div className="w-20 h-20 bg-green-500 mx-auto mb-2 relative rounded-full flex items-center justify-center">
+          <span className="text-4xl">{profilePicture}</span>
         </div>
         <h2 className="text-lg font-black">{username.toUpperCase()}</h2>
         <p className="text-xs text-gray-600">LONDON—BASILDON</p>
@@ -1800,11 +1847,16 @@ export default function GardenApp() {
       <div className="flex items-center gap-2 mb-4 flex-shrink-0">
         <button 
           onClick={() => setCurrentScreen("world")}
-          className="text-xl hover:text-green-600 transition-colors"
+          className="text-2xl hover:text-green-600 transition-colors bg-gray-100 hover:bg-gray-200 rounded-full p-2"
         >
           ←
         </button>
-        <div className="ml-auto text-lg font-bold">${money}</div>
+        <div className="ml-auto flex items-center gap-3">
+          <div className="w-6 h-6 bg-green-600 rounded-full flex items-center justify-center text-white text-xs font-bold">
+            {profilePicture}
+          </div>
+          <div className="text-lg font-bold">${money}</div>
+        </div>
       </div>
       
       <div className="bg-green-100 rounded-lg p-3 mb-4 flex-shrink-0">
@@ -1838,7 +1890,7 @@ export default function GardenApp() {
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
                   <span className="text-white font-bold text-xs">
-                    {user.username.charAt(0).toUpperCase()}
+                    😊
                   </span>
                 </div>
                 <div>
@@ -1872,7 +1924,9 @@ export default function GardenApp() {
           friends.map((friend, index) => (
             <div key={index} className="flex items-center justify-between p-3 bg-white rounded-lg border-2 border-gray-200">
               <div className="flex items-center gap-3">
-                <span className={`text-xl ${friend.color}`}>{friend.emoji}</span>
+                <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
+                  <span className="text-white font-bold text-xs">😊</span>
+                </div>
                 <span className="font-bold text-xs">{friend.name}</span>
               </div>
               <span className="text-xs text-green-600 font-bold">♥ FRIEND</span>
@@ -1885,13 +1939,46 @@ export default function GardenApp() {
 
   const ProfileScreen = () => (
     <div className="flex-1 flex flex-col p-4">
-      <div className="text-center mb-6 flex-shrink-0">
-        <div className="w-24 h-24 bg-green-500 mx-auto mb-4 relative rounded-full">
-          <div className="absolute inset-2 bg-white rounded-full"></div>
-          <div className="absolute top-6 left-6 w-4 h-4 bg-green-500 rounded-full"></div>
+      <div className="flex items-center gap-2 mb-4 flex-shrink-0">
+        <button 
+          onClick={() => setCurrentScreen("garden")}
+          className="text-2xl hover:text-green-600 transition-colors bg-gray-100 hover:bg-gray-200 rounded-full p-2"
+        >
+          ←
+        </button>
+        <div className="ml-auto flex items-center gap-3">
+          <div className="w-6 h-6 bg-green-600 rounded-full flex items-center justify-center text-white text-xs font-bold">
+            {profilePicture}
+          </div>
+          <div className="text-lg font-bold">${money}</div>
         </div>
-        <h2 className="text-2xl font-black text-gray-800 mb-2">{username.toUpperCase()}</h2>
-        <p className="text-sm text-gray-600 mb-4">GARDEN MASTER</p>
+      </div>
+      <div className="text-center mb-6 flex-shrink-0">
+        <div className="w-24 h-24 bg-green-500 mx-auto mb-4 relative rounded-full flex items-center justify-center">
+          <span className="text-6xl">{profilePicture}</span>
+        </div>
+        <div className="mb-4">
+          <h2 className="text-2xl font-black text-gray-800 mb-2">{username.toUpperCase()}</h2>
+          <p className="text-sm text-gray-600 mb-3">GARDEN MASTER</p>
+          
+          {/* Profile Picture Picker */}
+          <div className="bg-gray-100 rounded-lg p-3 mb-3">
+            <p className="text-xs text-gray-600 mb-2">Change Profile Picture</p>
+            <div className="grid grid-cols-8 gap-2">
+              {["😊", "😎", "🤠", "👻", "🐱", "🐶", "🦊", "🐸", "🐼", "🐨", "🦁", "🐯", "🐮", "🐷", "🐸", "🐙", "🦄", "🌈", "⭐", "🎮", "🎨", "🎭", "🎪", "🎯", "🎲", "🎸", "🎹", "🎺", "🎻", "🎼", "🎵", "🎶", "🎤", "🎧", "🎬", "🎭", "🎨", "🎪", "🎯", "🎲", "🎸", "🎹", "🎺", "🎻", "🎼", "🎵", "🎶", "🎤", "🎧", "🎬"].slice(0, 32).map((emoji, index) => (
+                <button
+                  key={index}
+                  onClick={() => updateProfilePicture(emoji)}
+                  className={`text-2xl p-1 rounded hover:bg-gray-200 transition-colors ${
+                    profilePicture === emoji ? "bg-green-200 ring-2 ring-green-500" : ""
+                  }`}
+                >
+                  {emoji}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
         <div className="bg-green-100 rounded-lg p-4 mb-4">
           <div className="text-2xl font-bold text-green-600 mb-2">${money}</div>
           <p className="text-xs text-gray-600">Current Balance</p>
