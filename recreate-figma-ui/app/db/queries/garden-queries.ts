@@ -21,23 +21,31 @@ import {
 // User operations
 export const createUser = async (data: InsertUser) => {
   try {
+    console.log('Attempting to create user:', { username: data.username, hasPassword: !!data.password });
     const [newUser] = await db.insert(users).values(data).returning();
+    console.log('User created successfully:', newUser.id);
     return newUser;
   } catch (error) {
     console.error("Error creating user:", error);
-    throw new Error("Failed to create user");
+    console.error("Database connection status:", { hasDb: !!db, errorType: error instanceof Error ? error.constructor.name : 'Unknown' });
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    throw new Error(`Failed to create user: ${errorMessage}`);
   }
 };
 
 export const getUserByUsername = async (username: string) => {
   try {
+    console.log('Attempting to get user by username:', username);
     const user = await db.query.users.findFirst({
       where: eq(users.username, username)
     });
+    console.log('User lookup result:', user ? 'Found' : 'Not found');
     return user;
   } catch (error) {
     console.error("Error getting user by username:", error);
-    throw new Error("Failed to get user");
+    console.error("Database connection status:", { hasDb: !!db, errorType: error instanceof Error ? error.constructor.name : 'Unknown' });
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    throw new Error(`Failed to get user: ${errorMessage}`);
   }
 };
 
