@@ -20,7 +20,7 @@ const schema = {
 };
 
 if (!process.env.DATABASE_URL) {
-  throw new Error("DATABASE_URL environment variable is not set");
+  throw new Error("DATABASE_URL environment variable is not set. Please check your Vercel environment variables.");
 }
 
 // Configure postgres client for Vercel serverless environment
@@ -28,7 +28,11 @@ const client = postgres(process.env.DATABASE_URL, {
   max: 1, // Limit connections for serverless
   idle_timeout: 20, // Close idle connections quickly
   connect_timeout: 10, // Fast connection timeout
-  ssl: 'require' // Enable SSL for Supabase
+  ssl: 'require', // Enable SSL for Supabase
+  prepare: false, // Disable prepared statements for better compatibility
+  connection: {
+    application_name: 'garden-app'
+  }
 });
 
 export const db = drizzle(client, { schema });
