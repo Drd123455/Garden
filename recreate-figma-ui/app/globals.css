@@ -168,6 +168,27 @@
     flex: 1;
     overflow-y: auto;
   }
+
+  /* Mobile touch improvements */
+  .touch-draggable {
+    touch-action: manipulation;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+  }
+
+  .touch-draggable:active {
+    transform: scale(1.05);
+    transition: transform 0.1s ease;
+  }
+
+  /* Prevent text selection during touch */
+  .garden-area, .inventory-area {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+  }
 }
 
 @keyframes purchaseSuccess {

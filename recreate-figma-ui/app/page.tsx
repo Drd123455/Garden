@@ -298,6 +298,17 @@ export default function GardenApp() {
   const [moneyAnimation, setMoneyAnimation] = useState<{ show: boolean; amount: number }>({ show: false, amount: 0 })
   const [droppingItems, setDroppingItems] = useState<Set<string>>(new Set())
 
+  // Touch drag and drop state for mobile
+  const [touchDragData, setTouchDragData] = useState<{
+    data: DragData
+    startX: number
+    startY: number
+    currentX?: number
+    currentY?: number
+    element: HTMLElement
+  } | null>(null)
+  const [isTouching, setIsTouching] = useState(false)
+
   // Load shop items on component mount
   useEffect(() => {
     loadShopItems()
@@ -1033,16 +1044,180 @@ export default function GardenApp() {
    }
 
   const handleTouchStart = (e: React.TouchEvent, data: DragData) => {
+    e.preventDefault()
     const touch = e.touches[0]
-    // Touch handling logic remains the same
+    
+    // Store touch data for mobile drag and drop
+    setTouchDragData({
+      data,
+      startX: touch.clientX,
+      startY: touch.clientY,
+      element: e.currentTarget as HTMLElement
+    })
+    
+    // Add visual feedback
+    setIsTouching(true)
+    const element = e.currentTarget as HTMLElement
+    element.style.transform = 'scale(1.1)'
+    element.style.zIndex = '50'
   }
 
   const handleTouchMove = (e: React.TouchEvent) => {
-    // Touch handling logic remains the same
+    if (!touchDragData) return
+    
+    e.preventDefault()
+    const touch = e.touches[0]
+    
+    // Update touch position
+    setTouchDragData(prev => prev ? {
+      ...prev,
+      currentX: touch.clientX,
+      currentY: touch.clientY
+    } : null)
   }
 
-  const handleTouchEnd = (e: React.TouchEvent) => {
-    // Touch handling logic remains the same
+  const handleTouchEnd = async (e: React.TouchEvent) => {
+    if (!touchDragData) return
+    
+    e.preventDefault()
+    const touch = e.changedTouches[0]
+    
+    // Find the drop target
+    const dropTarget = document.elementFromPoint(touch.clientX, touch.clientY)
+    
+    if (dropTarget) {
+      // Check if dropping on garden area
+      const gardenArea = dropTarget.closest('[data-garden-area]')
+      if (gardenArea) {
+        const rect = gardenArea.getBoundingClientRect()
+        const x = touch.clientX - rect.left - 16
+        const y = touch.clientY - rect.top - 16
+        const itemSize = 32
+        const maxX = Math.max(0, rect.width - itemSize)
+        const maxY = Math.max(0, rect.height - itemSize)
+        
+        await handleTouchDrop(touchDragData.data, x, y, maxX, maxY)
+      }
+      
+      // Check if dropping on inventory area
+      const inventoryArea = dropTarget.closest('[data-inventory-area]')
+      if (inventoryArea && touchDragData.data.type === "garden") {
+        await handleInventoryTouchDrop(touchDragData.data)
+      }
+    }
+    
+    // Clear touch data and reset visual feedback
+    setTouchDragData(null)
+    setIsTouching(false)
+    
+    // Reset element styling
+    if (touchDragData?.element) {
+      touchDragData.element.style.transform = ''
+      touchDragData.element.style.zIndex = ''
+    }
+  }
+
+  // Helper function for touch drop on garden
+  const handleTouchDrop = async (data: DragData, x: number, y: number, maxX: number, maxY: number) => {
+    try {
+      if (data.type === "inventory" && data.item.quantity > 0) {
+        // Add item from inventory to garden
+        const newItem: GardenItem = {
+          id: Date.now().toString(),
+          name: data.item.name,
+          emoji: data.item.emoji,
+          icon: data.item.icon,
+          color: data.item.color,
+          x: Math.max(0, Math.min(x, maxX)),
+          y: Math.max(0, Math.min(y, maxY)),
+        }
+
+        try {
+          // Save to database
+          await createGardenItemAction({
+            userId: currentUser.id,
+            name: newItem.name,
+            emoji: newItem.emoji,
+            icon: newItem.icon ? newItem.name : undefined,
+            color: newItem.color,
+            x: newItem.x,
+            y: newItem.y
+          })
+
+          // Update local state
+          setGardenItems((prev: any) => [...prev, newItem])
+          setDroppingItems((prev: any) => new Set([...prev, newItem.id]))
+          setTimeout(() => {
+            setDroppingItems((prev: any) => {
+              const next = new Set<string>(prev)
+              next.delete(newItem.id)
+              return next
+            })
+          }, 600)
+
+          // Decrease inventory quantity in database and local state
+          await updateInventoryQuantityAction(data.item.id, data.item.quantity - 1)
+          setInventoryItems((prev: any) =>
+            prev.map((item: any) => (item.id === data.item.id ? { ...item, quantity: item.quantity - 1 } : item))
+          )
+        } catch (error) {
+          console.error("Failed to place garden item:", error)
+        }
+      } else if (data.type === "garden" && data.sourceId) {
+        // Move existing garden item
+        const newX = Math.max(0, Math.min(x, maxX))
+        const newY = Math.max(0, Math.min(y, maxY))
+        
+        try {
+          // Update position in database
+          await updateGardenItemPositionAction(data.sourceId, newX, newY)
+          
+          // Update local state
+          setGardenItems((prev: any) =>
+            prev.map((item: any) =>
+              item.id === data.sourceId
+                ? { ...item, x: newX, y: newY }
+                : item
+            )
+          )
+        } catch (error) {
+          console.error("Failed to update garden item position:", error)
+        }
+      }
+    } catch (error) {
+      console.error("Error handling touch drop:", error)
+    }
+  }
+
+  // Helper function for touch drop on inventory
+  const handleInventoryTouchDrop = async (data: DragData) => {
+    try {
+      if (data.type === "garden" && data.sourceId) {
+        // Remove item from garden and return to inventory
+        const gardenItem = gardenItems.find((item) => item.id === data.sourceId)
+        
+        if (gardenItem) {
+          // Delete from garden
+          await deleteGardenItemAction(data.sourceId)
+          setGardenItems((prev) => prev.filter((item) => item.id !== data.sourceId))
+          
+          // Add to inventory
+          const existingInventoryItem = inventoryItems.find((item) => item.name === gardenItem.name)
+          if (existingInventoryItem) {
+            await updateInventoryQuantityAction(existingInventoryItem.id, existingInventoryItem.quantity + 1)
+            setInventoryItems((prev) =>
+              prev.map((item) =>
+                item.id === existingInventoryItem.id
+                  ? { ...item, quantity: item.quantity + 1 }
+                  : item
+              )
+            )
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Error handling inventory touch drop:", error)
+    }
   }
 
   // Function to handle garden item deletion
@@ -1100,7 +1275,7 @@ export default function GardenApp() {
 
   const ShopScreen = () => (
     <div className="flex-1 flex flex-col p-4">
-      <div className="flex justify-between items-center mb-4">
+      <div className="flex justify-between items-center mb-4 flex-shrink-0">
         <div className="w-6 h-6 bg-green-600 rounded-full"></div>
         <span className="text-sm font-bold">SHOP</span>
         <div className="relative">
@@ -1112,7 +1287,7 @@ export default function GardenApp() {
           )}
         </div>
       </div>
-      <div className="flex-1 grid grid-cols-3 gap-4 content-start">
+      <div className="flex-1 grid grid-cols-3 gap-4 content-start overflow-y-auto">
         {shopItems.map((item, index) => (
           <div key={index} className="text-center">
             <div className={`bg-gray-100 rounded-lg p-4 mb-2 h-20 flex items-center justify-center transition-all duration-300 ${
@@ -1198,18 +1373,20 @@ export default function GardenApp() {
           </svg>
 
           <div className="absolute inset-2 text-xs text-green-800 font-bold pointer-events-none z-10">
-            Drag items from inventory below
+            Drag items from inventory below • Touch & drag on mobile
           </div>
           {gardenItems.map((item) => (
             <div
               key={item.id}
-              className={`absolute cursor-move hover:scale-110 transition-transform ${
+              className={`absolute cursor-move hover:scale-110 transition-transform touch-draggable ${
                 droppingItems.has(item.id) ? 'garden-drop' : ''
               }`}
               style={{ left: item.x, top: item.y }}
               draggable
               onDragStart={(e) => handleDragStart(e, { type: "garden", item, sourceId: item.id })}
               onTouchStart={(e) => handleTouchStart(e, { type: "garden", item, sourceId: item.id })}
+              onTouchMove={handleTouchMove}
+              onTouchEnd={handleTouchEnd}
             >
               {item.icon ? (
                 <Image src={item.icon} alt={item.name} width={40} height={40} className="h-10 w-10 object-contain drop-shadow-sm" />
@@ -1228,13 +1405,13 @@ export default function GardenApp() {
       >
         <div className="flex justify-between items-center mb-3 flex-shrink-0">
           <h2 className="text-lg font-black">INVENTORY</h2>
-          <span className="text-xs text-gray-600">Drag to place • Drop here to return</span>
+          <span className="text-xs text-gray-600">Drag to place • Drop here to return • Touch & drag on mobile</span>
         </div>
         <div className="grid grid-cols-4 gap-3 flex-1 overflow-y-auto">
           {inventoryItems.map((item, index) => (
             <div
               key={item.id}
-              className={`text-center transition-all duration-300 ${
+              className={`text-center transition-all duration-300 touch-draggable ${
                 item.quantity > 0 ? "cursor-grab active:cursor-grabbing" : "opacity-50"
               } ${
                 purchasedItems.has(item.name) ? "animate-pulse scale-105" : ""
@@ -1242,6 +1419,8 @@ export default function GardenApp() {
               draggable={item.quantity > 0}
               onDragStart={(e) => item.quantity > 0 && handleDragStart(e, { type: "inventory", item })}
               onTouchStart={(e) => item.quantity > 0 && handleTouchStart(e, { type: "inventory", item })}
+              onTouchMove={handleTouchMove}
+              onTouchEnd={handleTouchEnd}
             >
               <div className={`bg-white rounded-lg p-2 mb-1 h-12 flex items-center justify-center hover:bg-gray-100 transition-all duration-300 border ${
                 purchasedItems.has(item.name) ? "bg-green-100 shadow-lg item-highlight" : ""
