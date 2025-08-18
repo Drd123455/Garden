@@ -2766,7 +2766,6 @@ export default function GardenApp() {
   return (
     <div className="w-full h-[800px] max-w-sm mx-auto bg-background rounded-3xl shadow-2xl overflow-hidden flex flex-col">
       <style jsx>{`
-        /* Temporarily disabled animations to test clicking
         @keyframes float {
           0%, 100% { transform: translateY(0px) rotate(0deg); }
           50% { transform: translateY(-10px) rotate(180deg); }
@@ -2815,7 +2814,6 @@ export default function GardenApp() {
         .wind-indicator {
           animation: sway 3s ease-in-out infinite;
         }
-        */
       `}</style>
       <div key={currentScreen} className="screen-enter slide-in flex-1 flex flex-col min-h-0 overflow-hidden">
         {renderScreen()}
