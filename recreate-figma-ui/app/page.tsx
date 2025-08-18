@@ -1727,7 +1727,7 @@ export default function GardenApp() {
           {gardenItems.map((item) => (
             <div
               key={item.id}
-              className={`absolute cursor-move hover:scale-110 transition-transform touch-draggable hover-lift z-30 ${
+              className={`absolute cursor-move hover:scale-110 transition-transform touch-draggable hover-lift ${
                 droppingItems.has(item.id) ? 'garden-drop' : ''
               } ${
                 touchDragData?.data.type === "garden" && touchDragData.data.sourceId === item.id ? "ring-2 ring-blue-500 ring-opacity-75" : ""
@@ -1736,7 +1736,8 @@ export default function GardenApp() {
                 left: item.x, 
                 top: item.y,
                 transform: `rotate(${windStrength * windDirection * 1}deg)`,
-                transition: 'transform 0.8s ease-out'
+                transition: 'transform 0.8s ease-out',
+                zIndex: 50
               }}
               draggable
               onDragStart={(e) => handleDragStart(e, { type: "garden", item, sourceId: item.id })}
@@ -1754,7 +1755,8 @@ export default function GardenApp() {
 
           {/* River Background */}
           <svg
-            className="absolute inset-0 w-full h-full pointer-events-none z-15"
+            className="absolute inset-0 w-full h-full pointer-events-none"
+            style={{ zIndex: 10 }}
             viewBox="0 0 100 100"
             preserveAspectRatio="none"
           >
@@ -1765,8 +1767,8 @@ export default function GardenApp() {
           {/* Drag Preview for Mobile */}
           {dragPreview && dragPreview.show && (
             <div
-              className="absolute pointer-events-none z-50 drag-preview"
-              style={{ left: dragPreview.x, top: dragPreview.y }}
+              className="absolute pointer-events-none drag-preview"
+              style={{ left: dragPreview.x, top: dragPreview.y, zIndex: 100 }}
             >
               {dragPreview.item.icon ? (
                 renderImage(
@@ -1785,7 +1787,7 @@ export default function GardenApp() {
           )}
 
           {/* UI Indicators Layer */}
-          <div className="absolute inset-0 pointer-events-none z-20">
+          <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 20 }}>
             {/* Wind Indicator */}
             <div 
               className="absolute top-2 right-2 text-xs text-white bg-black/20 px-2 py-1 rounded-full wind-indicator"
@@ -1816,13 +1818,13 @@ export default function GardenApp() {
             </div>
           </div>
 
-          {/* Particles Layer - Lowest Priority, No Interaction */}
+          {/* Particles Layer - Background Only, No Interaction */}
           {particlesEnabled && (
-            <div className="absolute inset-0 pointer-events-none z-5">
+            <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 1 }}>
               {particles.map((particle) => (
                 <div
                   key={particle.id}
-                  className={`absolute ${
+                  className={`absolute pointer-events-none ${
                     particle.type === 'leaf' ? 'particle-leaf' :
                     particle.type === 'petal' ? 'particle-petal' :
                     particle.type === 'sparkle' ? 'particle-sparkle' :
@@ -1834,23 +1836,24 @@ export default function GardenApp() {
                     top: particle.y,
                     transform: `rotate(${particle.rotation}deg) scale(${particle.size})`,
                     opacity: particle.opacity,
-                    transition: 'transform 0.1s ease-out'
+                    transition: 'transform 0.1s ease-out',
+                    pointerEvents: 'none'
                   }}
                 >
                   {particle.type === 'leaf' && (
-                    <span className="text-lg text-green-600 drop-shadow-sm">🍃</span>
+                    <span className="text-lg text-green-600 drop-shadow-sm pointer-events-none">🍃</span>
                   )}
                   {particle.type === 'petal' && (
-                    <span className="text-lg text-pink-400 drop-shadow-sm">🌸</span>
+                    <span className="text-lg text-pink-400 drop-shadow-sm pointer-events-none">🌸</span>
                   )}
                   {particle.type === 'sparkle' && (
-                    <span className="text-lg text-yellow-400 drop-shadow-sm">✨</span>
+                    <span className="text-lg text-yellow-400 drop-shadow-sm pointer-events-none">✨</span>
                   )}
                   {particle.type === 'snowflake' && (
-                    <span className="text-lg text-blue-400 drop-shadow-sm">❄️</span>
+                    <span className="text-lg text-blue-400 drop-shadow-sm pointer-events-none">❄️</span>
                   )}
                   {particle.type === 'firefly' && (
-                    <span className="text-lg text-purple-400 drop-shadow-sm">🔥</span>
+                    <span className="text-lg text-purple-400 drop-shadow-sm pointer-events-none">🔥</span>
                   )}
                 </div>
               ))}
