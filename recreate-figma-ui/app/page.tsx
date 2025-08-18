@@ -1696,6 +1696,61 @@ export default function GardenApp() {
 
   const GardenScreen = () => (
     <div className="flex-1 flex flex-col">
+      {/* Particles Container - Completely Separate from Garden */}
+      {particlesEnabled && (
+        <div 
+          className="absolute inset-0 pointer-events-none"
+          style={{ 
+            zIndex: 1,
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'transparent'
+          }}
+        >
+          {particles.map((particle) => (
+            <div
+              key={particle.id}
+              className={`absolute pointer-events-none ${
+                particle.type === 'leaf' ? 'particle-leaf' :
+                particle.type === 'petal' ? 'particle-petal' :
+                particle.type === 'sparkle' ? 'particle-sparkle' :
+                particle.type === 'snowflake' ? 'particle-snowflake' :
+                'particle-firefly'
+              }`}
+              style={{
+                left: particle.x + 16, // Adjust for container padding
+                top: particle.y + 80,  // Adjust for header height
+                transform: `rotate(${particle.rotation}deg) scale(${particle.size})`,
+                opacity: particle.opacity,
+                transition: 'transform 0.1s ease-out',
+                pointerEvents: 'none',
+                userSelect: 'none',
+                WebkitUserSelect: 'none'
+              }}
+            >
+              {particle.type === 'leaf' && (
+                <span className="text-lg text-green-600 drop-shadow-sm pointer-events-none select-none">🍃</span>
+              )}
+              {particle.type === 'petal' && (
+                <span className="text-lg text-pink-400 drop-shadow-sm pointer-events-none select-none">🌸</span>
+              )}
+              {particle.type === 'sparkle' && (
+                <span className="text-lg text-yellow-400 drop-shadow-sm pointer-events-none select-none">✨</span>
+              )}
+              {particle.type === 'snowflake' && (
+                <span className="text-lg text-blue-400 drop-shadow-sm pointer-events-none select-none">❄️</span>
+              )}
+              {particle.type === 'firefly' && (
+                <span className="text-lg text-purple-400 drop-shadow-sm pointer-events-none select-none">🔥</span>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
       <div className="p-4 pb-2 flex-shrink-0">
         <div className="flex justify-between items-center mb-4">
           <div className="w-6 h-6 bg-green-600 rounded-full flex items-center justify-center text-white text-xs font-bold">
@@ -1715,56 +1770,6 @@ export default function GardenApp() {
           onTouchEnd={handleTouchEnd}
           data-garden-area
         >
-          {/* Background Particles Container - Completely Separate */}
-          {particlesEnabled && (
-            <div 
-              className="absolute inset-0 pointer-events-none"
-              style={{ 
-                zIndex: 0,
-                background: 'transparent'
-              }}
-            >
-              {particles.map((particle) => (
-                <div
-                  key={particle.id}
-                  className={`absolute pointer-events-none ${
-                    particle.type === 'leaf' ? 'particle-leaf' :
-                    particle.type === 'petal' ? 'particle-petal' :
-                    particle.type === 'sparkle' ? 'particle-sparkle' :
-                    particle.type === 'snowflake' ? 'particle-snowflake' :
-                    'particle-firefly'
-                  }`}
-                  style={{
-                    left: particle.x,
-                    top: particle.y,
-                    transform: `rotate(${particle.rotation}deg) scale(${particle.size})`,
-                    opacity: particle.opacity,
-                    transition: 'transform 0.1s ease-out',
-                    pointerEvents: 'none',
-                    userSelect: 'none',
-                    WebkitUserSelect: 'none'
-                  }}
-                >
-                  {particle.type === 'leaf' && (
-                    <span className="text-lg text-green-600 drop-shadow-sm pointer-events-none select-none">🍃</span>
-                  )}
-                  {particle.type === 'petal' && (
-                    <span className="text-lg text-pink-400 drop-shadow-sm pointer-events-none select-none">🌸</span>
-                  )}
-                  {particle.type === 'sparkle' && (
-                    <span className="text-lg text-yellow-400 drop-shadow-sm pointer-events-none select-none">✨</span>
-                  )}
-                  {particle.type === 'snowflake' && (
-                    <span className="text-lg text-blue-400 drop-shadow-sm pointer-events-none select-none">❄️</span>
-                  )}
-                  {particle.type === 'firefly' && (
-                    <span className="text-lg text-purple-400 drop-shadow-sm pointer-events-none select-none">🔥</span>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-
           {/* Test Button to Check Clicking */}
           <button
             onClick={() => alert('Garden area clicking works!')}
