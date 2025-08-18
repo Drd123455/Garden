@@ -1660,9 +1660,17 @@ export default function GardenApp() {
           <div></div>
         </div>
         <div
-          className="relative bg-green-400 border-2 border-green-600 rounded-lg overflow-hidden flex-shrink-0"
+          className="relative border-2 border-green-600 rounded-lg overflow-hidden flex-shrink-0"
           style={{
-            height: "280px"
+            height: "280px",
+            backgroundImage: `
+              radial-gradient(circle at 25% 25%, #22c55e 2px, transparent 2px),
+              radial-gradient(circle at 75% 75%, #16a34a 2px, transparent 2px),
+              radial-gradient(circle at 25% 75%, #15803d 1px, transparent 1px),
+              radial-gradient(circle at 75% 25%, #22c55e 1px, transparent 1px)
+            `,
+            backgroundSize: "16px 16px",
+            backgroundPosition: "0 0, 0 0, 8px 8px, 8px 8px",
           }}
           onDragOver={handleDragOver}
           onDrop={handleDrop}
@@ -1670,69 +1678,6 @@ export default function GardenApp() {
           onTouchEnd={handleTouchEnd}
           data-garden-area
         >
-          {/* Grass Pattern Background */}
-          <div 
-            className="absolute inset-0 pointer-events-none"
-            style={{ zIndex: 1 }}
-          >
-            {/* Grass tufts pattern */}
-            <div className="absolute top-10 left-8 text-xs text-green-700 opacity-60">🌱</div>
-            <div className="absolute top-15 left-20 text-xs text-green-700 opacity-60">🌱</div>
-            <div className="absolute top-25 left-12 text-xs text-green-700 opacity-60">🌱</div>
-            <div className="absolute top-35 left-25 text-xs text-green-700 opacity-60">🌱</div>
-            <div className="absolute top-45 left-8 text-xs text-green-700 opacity-60">🌱</div>
-            <div className="absolute top-55 left-22 text-xs text-green-700 opacity-60">🌱</div>
-            <div className="absolute top-65 left-15 text-xs text-green-700 opacity-60">🌱</div>
-            <div className="absolute top-75 left-28 text-xs text-green-700 opacity-60">🌱</div>
-            <div className="absolute top-85 left-10 text-xs text-green-700 opacity-60">🌱</div>
-            <div className="absolute top-95 left-18 text-xs text-green-700 opacity-60">🌱</div>
-            <div className="absolute top-105 left-25 text-xs text-green-700 opacity-60">🌱</div>
-            <div className="absolute top-115 left-12 text-xs text-green-700 opacity-60">🌱</div>
-            <div className="absolute top-125 left-20 text-xs text-green-700 opacity-60">🌱</div>
-            <div className="absolute top-135 left-8 text-xs text-green-700 opacity-60">🌱</div>
-            <div className="absolute top-145 left-22 text-xs text-green-700 opacity-60">🌱</div>
-            <div className="absolute top-155 left-15 text-xs text-green-700 opacity-60">🌱</div>
-            <div className="absolute top-165 left-28 text-xs text-green-700 opacity-60">🌱</div>
-            <div className="absolute top-175 left-10 text-xs text-green-700 opacity-60">🌱</div>
-            <div className="absolute top-185 left-18 text-xs text-green-700 opacity-60">🌱</div>
-            <div className="absolute top-195 left-25 text-xs text-green-700 opacity-60">🌱</div>
-            <div className="absolute top-205 left-12 text-xs text-green-700 opacity-60">🌱</div>
-            <div className="absolute top-215 left-20 text-xs text-green-700 opacity-60">🌱</div>
-            <div className="absolute top-225 left-8 text-xs text-green-700 opacity-60">🌱</div>
-            <div className="absolute top-235 left-22 text-xs text-green-700 opacity-60">🌱</div>
-            <div className="absolute top-245 left-15 text-xs text-green-700 opacity-60">🌱</div>
-            <div className="absolute top-255 left-28 text-xs text-green-700 opacity-60">🌱</div>
-            
-            {/* Additional grass tufts on the right side */}
-            <div className="absolute top-20 right-15 text-xs text-green-700 opacity-60">🌱</div>
-            <div className="absolute top-40 right-8 text-xs text-green-700 opacity-60">🌱</div>
-            <div className="absolute top-60 right-20 text-xs text-green-700 opacity-60">🌱</div>
-            <div className="absolute top-80 right-12 text-xs text-green-700 opacity-60">🌱</div>
-            <div className="absolute top-100 right-18 text-xs text-green-700 opacity-60">🌱</div>
-            <div className="absolute top-120 right-10 text-xs text-green-700 opacity-60">🌱</div>
-            <div className="absolute top-140 right-22 text-xs text-green-700 opacity-60">🌱</div>
-            <div className="absolute top-160 right-8 text-xs text-green-700 opacity-60">🌱</div>
-            <div className="absolute top-180 right-20 text-xs text-green-700 opacity-60">🌱</div>
-            <div className="absolute top-200 right-15 text-xs text-green-700 opacity-60">🌱</div>
-            <div className="absolute top-220 right-12 text-xs text-green-700 opacity-60">🌱</div>
-            <div className="absolute top-240 right-18 text-xs text-green-700 opacity-60">🌱</div>
-            
-            {/* Some clover for variety */}
-            <div className="absolute top-30 left-35 text-xs text-green-600 opacity-50">☘️</div>
-            <div className="absolute top-70 left-40 text-xs text-green-600 opacity-50">☘️</div>
-            <div className="absolute top-110 left-35 text-xs text-green-600 opacity-50">☘️</div>
-            <div className="absolute top-150 left-40 text-xs text-green-600 opacity-50">☘️</div>
-            <div className="absolute top-190 left-35 text-xs text-green-600 opacity-50">☘️</div>
-            <div className="absolute top-230 left-40 text-xs text-green-600 opacity-50">☘️</div>
-            
-            {/* Some small flowers for color */}
-            <div className="absolute top-50 left-15 text-xs text-yellow-400 opacity-70">🌼</div>
-            <div className="absolute top-90 left-30 text-xs text-yellow-400 opacity-70">🌼</div>
-            <div className="absolute top-130 left-18 text-xs text-yellow-400 opacity-70">🌼</div>
-            <div className="absolute top-170 left-32 text-xs text-yellow-400 opacity-70">🌼</div>
-            <div className="absolute top-210 left-16 text-xs text-yellow-400 opacity-70">🌼</div>
-            <div className="absolute top-250 left-28 text-xs text-yellow-400 opacity-70">🌼</div>
-          </div>
 
           {/* Garden Items Layer - Highest Priority for Interaction */}
           {gardenItems.map((item) => (
