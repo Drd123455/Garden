@@ -356,19 +356,12 @@ export default function GardenApp() {
   const [windStrength, setWindStrength] = useState(0.5)
   const [windDirection, setWindDirection] = useState(1) // 1 for right, -1 for left
   const [season, setSeason] = useState<'spring' | 'summer' | 'autumn' | 'winter'>('spring')
-  const [particlesEnabled, setParticlesEnabled] = useState(true) // Debug toggle
+  const [particlesEnabled, setParticlesEnabled] = useState(false) // Debug toggle - temporarily disabled
 
   // Function to update profile picture
-  const updateProfilePicture = async (emoji: string) => {
+  const updateProfilePicture = (emoji: string) => {
     setProfilePicture(emoji)
-    // Save to localStorage for persistence
-    localStorage.setItem("profilePicture", emoji)
-    
-    // Exit edit mode after selecting a new picture
     setIsProfileEditing(false)
-    
-    // TODO: Save to database when user profile update action is implemented
-    // await updateUserProfilePictureAction(currentUser.id, emoji)
   }
 
   // Helper function to render images (handles both StaticImageData and string paths)
@@ -449,31 +442,40 @@ export default function GardenApp() {
   }, [currentScreen, currentUser])
 
   // Initialize particle system
+  /*
   useEffect(() => {
     // Create initial particles
     const initialParticles = Array.from({ length: 10 }, () => createParticle())
     setParticles(initialParticles)
   }, [])
+  */
 
   // Particle animation loop
+  /*
   useEffect(() => {
+    if (!particlesEnabled) return
     const particleInterval = setInterval(() => {
       updateParticles()
     }, 50) // 20 FPS for smooth animation
 
     return () => clearInterval(particleInterval)
-  }, [windStrength, windDirection])
+  }, [windStrength, windDirection, particlesEnabled])
+  */
 
   // Wind animation loop
+  /*
   useEffect(() => {
+    if (!particlesEnabled) return
     const windInterval = setInterval(() => {
       updateWind()
-    }, 200) // Update wind every 200ms
+    }, 200) // Update wind every 30 seconds
 
     return () => clearInterval(windInterval)
-  }, [])
+  }, [particlesEnabled])
+  */
 
   // Seasonal change loop
+  /*
   useEffect(() => {
     const seasonInterval = setInterval(() => {
       setSeason(prev => {
@@ -486,6 +488,7 @@ export default function GardenApp() {
 
     return () => clearInterval(seasonInterval)
   }, [])
+  */
 
   // Helper function to refresh leaderboard if on leaderboard screen
   const refreshLeaderboardIfNeeded = () => {
@@ -1732,29 +1735,18 @@ export default function GardenApp() {
           onTouchEnd={handleTouchEnd}
           data-garden-area
         >
-          <svg
-            className="absolute inset-0 w-full h-full pointer-events-none"
-            viewBox="0 0 100 100"
-            preserveAspectRatio="none"
-          >
-            <path d="M0,45 Q25,35 50,45 T100,40 L100,55 Q75,65 50,55 T0,60 Z" fill="#3b82f6" opacity="0.8" />
-            <path d="M0,45 Q25,35 50,45 T100,40 L100,50 Q75,60 50,50 T0,55 Z" fill="#1d4ed8" opacity="0.6" />
-          </svg>
-
-
+          {/* Garden Items Layer - Highest Priority for Interaction */}
           {gardenItems.map((item) => (
             <div
               key={item.id}
-              className={`absolute cursor-move hover:scale-110 transition-transform touch-draggable hover-lift z-20 ${
+              className={`absolute cursor-move hover:scale-110 transition-transform touch-draggable hover-lift z-30 ${
                 droppingItems.has(item.id) ? 'garden-drop' : ''
               } ${
                 touchDragData?.data.type === "garden" && touchDragData.data.sourceId === item.id ? "ring-2 ring-blue-500 ring-opacity-75" : ""
               }`}
               style={{ 
                 left: item.x, 
-                top: item.y,
-                transform: `rotate(${windStrength * windDirection * 2}deg)`,
-                transition: 'transform 0.5s ease-out'
+                top: item.y
               }}
               draggable
               onDragStart={(e) => handleDragStart(e, { type: "garden", item, sourceId: item.id })}
@@ -1769,7 +1761,17 @@ export default function GardenApp() {
               )}
             </div>
           ))}
-          
+
+          {/* River Background */}
+          <svg
+            className="absolute inset-0 w-full h-full pointer-events-none z-15"
+            viewBox="0 0 100 100"
+            preserveAspectRatio="none"
+          >
+            <path d="M0,45 Q25,35 50,45 T100,40 L100,55 Q75,65 50,55 T0,60 Z" fill="#3b82f6" opacity="0.8" />
+            <path d="M0,45 Q25,35 50,45 T100,40 L100,50 Q75,60 50,50 T0,55 Z" fill="#1d4ed8" opacity="0.6" />
+          </svg>
+
           {/* Drag Preview for Mobile */}
           {dragPreview && dragPreview.show && (
             <div
@@ -1792,70 +1794,17 @@ export default function GardenApp() {
             </div>
           )}
 
-          {/* Floating Particles System */}
-          {particlesEnabled && particles.map((particle) => (
-            <div
-              key={particle.id}
-              className={`absolute pointer-events-none z-10 ${
-                particle.type === 'leaf' ? 'particle-leaf' :
-                particle.type === 'petal' ? 'particle-petal' :
-                particle.type === 'sparkle' ? 'particle-sparkle' :
-                particle.type === 'snowflake' ? 'particle-snowflake' :
-                'particle-firefly'
-              }`}
-              style={{
-                left: particle.x,
-                top: particle.y,
-                transform: `rotate(${particle.rotation}deg) scale(${particle.size})`,
-                opacity: particle.opacity,
-                transition: 'transform 0.1s ease-out'
-              }}
-            >
-              {particle.type === 'leaf' && (
-                <span className="text-lg text-green-600 drop-shadow-sm">🍃</span>
-              )}
-              {particle.type === 'petal' && (
-                <span className="text-lg text-pink-400 drop-shadow-sm">🌸</span>
-              )}
-              {particle.type === 'sparkle' && (
-                <span className="text-lg text-yellow-400 drop-shadow-sm">✨</span>
-              )}
-              {particle.type === 'snowflake' && (
-                <span className="text-lg text-blue-400 drop-shadow-sm">❄️</span>
-              )}
-              {particle.type === 'firefly' && (
-                <span className="text-lg text-purple-400 drop-shadow-sm">🔥</span>
-              )}
+          {/* UI Indicators Layer */}
+          <div className="absolute inset-0 pointer-events-none z-20">
+            {/* Debug Toggle for Particles */}
+            <div className="absolute bottom-2 right-2">
+              <button
+                onClick={() => setParticlesEnabled(!particlesEnabled)}
+                className="text-xs bg-black/20 text-white px-2 py-1 rounded-full hover:bg-black/40 transition-colors pointer-events-auto"
+              >
+                {particlesEnabled ? '🌿 Hide Particles' : '🌿 Show Particles'}
+              </button>
             </div>
-          ))}
-
-          {/* Wind Indicator */}
-          <div 
-            className="absolute top-2 right-2 text-xs text-white bg-black/20 px-2 py-1 rounded-full pointer-events-none wind-indicator"
-            style={{
-              transform: `translateX(${windDirection * windStrength * 10}px)`,
-              transition: 'transform 0.5s ease-out'
-            }}
-          >
-            💨 {windStrength > 0.8 ? 'Strong' : windStrength > 0.5 ? 'Moderate' : 'Light'} Wind
-          </div>
-
-          {/* Season Indicator */}
-          <div className="absolute top-2 left-2 text-xs text-white bg-black/20 px-2 py-1 rounded-full pointer-events-none">
-            {season === 'spring' && '🌸 Spring'}
-            {season === 'summer' && '☀️ Summer'}
-            {season === 'autumn' && '🍂 Autumn'}
-            {season === 'winter' && '❄️ Winter'}
-          </div>
-
-          {/* Debug Toggle for Particles */}
-          <div className="absolute bottom-2 right-2">
-            <button
-              onClick={() => setParticlesEnabled(!particlesEnabled)}
-              className="text-xs bg-black/20 text-white px-2 py-1 rounded-full hover:bg-black/40 transition-colors"
-            >
-              {particlesEnabled ? '🌿 Hide Particles' : '🌿 Show Particles'}
-            </button>
           </div>
         </div>
       </div>

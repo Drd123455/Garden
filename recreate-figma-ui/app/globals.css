@@ -13,8 +13,8 @@
   scroll-behavior: smooth;
 }
 
-/* Enhanced smooth transitions for all interactive elements */
-* {
+/* Enhanced smooth transitions for interactive elements only */
+button, a, input, select, textarea, .hover-lift, .hover-scale {
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
