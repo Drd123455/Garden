@@ -1662,7 +1662,7 @@ export default function GardenApp() {
           className="relative border-2 border-green-600 rounded-lg overflow-hidden flex-shrink-0"
                       style={{
               height: "280px",
-              backgroundColor: "#bbf7d0",
+              backgroundColor: "#3cb066",
               backgroundImage: `
                 radial-gradient(circle at 25% 25%, #22c55e 2px, transparent 2px),
                 radial-gradient(circle at 75% 75%, #16a34a 2px, transparent 2px),
@@ -1714,8 +1714,33 @@ export default function GardenApp() {
             viewBox="0 0 100 100"
             preserveAspectRatio="none"
           >
-            <path d="M0,45 Q25,35 50,45 T100,40 L100,55 Q75,65 50,55 T0,60 Z" fill="#3b82f6" opacity="0.8" />
-            <path d="M0,45 Q25,35 50,45 T100,40 L100,50 Q75,60 50,50 T0,55 Z" fill="#1d4ed8" opacity="0.6" />
+            {/* Main river body with flowing effect */}
+            <defs>
+              <linearGradient id="riverGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.8">
+                  <animate attributeName="offset" values="0;1;0" dur="3s" repeatCount="indefinite" />
+                </stop>
+                <stop offset="50%" stopColor="#1d4ed8" stopOpacity="0.6">
+                  <animate attributeName="offset" values="0;1;0" dur="3s" repeatCount="indefinite" />
+                </stop>
+                <stop offset="100%" stopColor="#3b82f6" stopOpacity="0.8">
+                  <animate attributeName="offset" values="0;1;0" dur="3s" repeatCount="indefinite" />
+                </stop>
+              </linearGradient>
+            </defs>
+            
+            {/* Animated river paths */}
+            <path d="M0,45 Q25,35 50,45 T100,40 L100,55 Q75,65 50,55 T0,60 Z" fill="url(#riverGradient)" />
+            
+            {/* Flowing water ripples */}
+            <path d="M0,48 Q25,38 50,48 T100,43 L100,52 Q75,62 50,52 T0,57 Z" fill="#60a5fa" opacity="0.4">
+              <animate attributeName="opacity" values="0.4;0.7;0.4" dur="2s" repeatCount="indefinite" />
+            </path>
+            
+            {/* Additional flowing effect */}
+            <path d="M0,50 Q25,40 50,50 T100,45 L100,54 Q75,64 50,54 T0,59 Z" fill="#93c5fd" opacity="0.3">
+              <animate attributeName="opacity" values="0.3;0.6;0.3" dur="1.5s" repeatCount="indefinite" />
+            </path>
           </svg>
 
           {/* Drag Preview for Mobile */}
@@ -1856,7 +1881,7 @@ export default function GardenApp() {
           <div 
             className="relative w-full border-2 border-green-600 rounded-lg overflow-hidden flex-1"
             style={{
-              backgroundColor: "#bbf7d0",
+              backgroundColor: "#3cb066",
               backgroundImage: `
                 radial-gradient(circle at 25% 25%, #22c55e 2px, transparent 2px),
                 radial-gradient(circle at 75% 75%, #16a34a 2px, transparent 2px),
