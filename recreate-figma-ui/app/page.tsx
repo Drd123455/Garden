@@ -48,13 +48,15 @@ import {
   getAllUsersAction,
   getUserByIdAction,
   getUsersWithGardenItemsAction,
-  searchUsersByUsernameAction
+  searchUsersByUsernameAction,
+  getLeaderboardDataAction,
+  getFriendsLeaderboardAction
 } from "./actions/garden-actions"
 
 // Import task pool utilities
 import { getRandomTasks, getRandomTask, TaskTemplate } from "./utils/taskPool"
 
-type Screen = "shop" | "garden" | "world" | "tasks" | "add-friends" | "profile"
+type Screen = "shop" | "garden" | "world" | "tasks" | "add-friends" | "profile" | "leaderboard"
 
 type GardenItem = {
   id: string
@@ -299,6 +301,13 @@ export default function GardenApp() {
   const [isSearching, setIsSearching] = useState(false)
   const [friendSearchQuery, setFriendSearchQuery] = useState("")
 
+  // Leaderboard states
+  const [leaderboardData, setLeaderboardData] = useState<any[]>([])
+  const [friendsLeaderboardData, setFriendsLeaderboardData] = useState<any[]>([])
+  const [isLoadingLeaderboard, setIsLoadingLeaderboard] = useState(false)
+  const [leaderboardError, setLeaderboardError] = useState<string | null>(null)
+  const [currentLeaderboardView, setCurrentLeaderboardView] = useState<"global" | "friends">("friends")
+
   // UI state
   const [purchasedItems, setPurchasedItems] = useState<Set<string>>(new Set())
   const [moneyAnimation, setMoneyAnimation] = useState<{ show: boolean; amount: number }>({ show: false, amount: 0 })
@@ -345,6 +354,13 @@ export default function GardenApp() {
       loadUserData()
     }
   }, [currentUser])
+
+  // Load leaderboard data when navigating to leaderboard
+  useEffect(() => {
+    if (currentScreen === "leaderboard" && currentUser) {
+      loadLeaderboardData()
+    }
+  }, [currentScreen, currentUser])
 
   const loadShopItems = async () => {
     try {
@@ -1289,6 +1305,44 @@ export default function GardenApp() {
     }
   }
 
+  // Leaderboard functions
+  const loadLeaderboardData = async () => {
+    if (!currentUser) return
+
+    try {
+      setIsLoadingLeaderboard(true)
+      setLeaderboardError(null)
+
+      // Load global leaderboard
+      const globalResult = await getLeaderboardDataAction()
+      if (globalResult.status === "success" && globalResult.data) {
+        setLeaderboardData(globalResult.data)
+      }
+
+      // Load friends leaderboard
+      const friendUsernames = friends.map(f => f.name)
+      const friendsResult = await getFriendsLeaderboardAction(currentUser.id, friendUsernames)
+      if (friendsResult.status === "success" && friendsResult.data) {
+        setFriendsLeaderboardData(friendsResult.data)
+      }
+    } catch (error) {
+      console.error("Failed to load leaderboard data:", error)
+      setLeaderboardError("Failed to load leaderboard data")
+    } finally {
+      setIsLoadingLeaderboard(false)
+    }
+  }
+
+  const getCurrentUserRank = () => {
+    if (currentLeaderboardView === "friends") {
+      const userRank = friendsLeaderboardData.findIndex(user => user.userId === currentUser?.id) + 1
+      return userRank > 0 ? userRank : "N/A"
+    } else {
+      const userRank = leaderboardData.findIndex(user => user.userId === currentUser?.id) + 1
+      return userRank > 0 ? userRank : "N/A"
+    }
+  }
+
   const BottomNav = () => {
     const isWorldActive = currentScreen === "world" || currentScreen === "add-friends"
     return (
@@ -1935,6 +1989,117 @@ export default function GardenApp() {
     </div>
   )
 
+  const LeaderboardScreen = () => (
+    <div className="flex-1 flex flex-col p-4">
+      <div className="flex items-center gap-2 mb-4 flex-shrink-0">
+        <button 
+          onClick={() => setCurrentScreen("garden")}
+          className="text-2xl hover:text-green-600 bg-gray-100 hover:bg-gray-200 rounded-full p-2 hover-lift ripple"
+        >
+          ←
+        </button>
+        <div className="ml-auto flex items-center gap-3">
+          <div className="w-6 h-6 bg-green-600 rounded-full flex items-center justify-center text-white text-xs font-bold">
+            {profilePicture}
+          </div>
+          <div className="text-lg font-bold">${money}</div>
+        </div>
+      </div>
+
+      <div className="flex-1 flex flex-col space-y-4">
+        {/* View Toggle */}
+        <div className="flex gap-2 p-1 bg-muted rounded-lg">
+          <button
+            onClick={() => setCurrentLeaderboardView("friends")}
+            className={`flex-1 py-2 px-4 rounded-md text-sm font-bold transition-all hover-scale ${
+              currentLeaderboardView === "friends" 
+                ? "bg-background text-foreground shadow-sm" 
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            FRIENDS
+          </button>
+          <button
+            onClick={() => setCurrentLeaderboardView("global")}
+            className={`flex-1 py-2 px-4 rounded-md text-sm font-bold transition-all hover-scale ${
+              currentLeaderboardView === "global" 
+                ? "bg-background text-foreground shadow-sm" 
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            GLOBAL
+          </button>
+        </div>
+
+        {/* Current User Rank */}
+        <div className="bg-gradient-to-r from-green-500 to-green-600 rounded-lg p-4 text-white">
+          <div className="text-center">
+            <div className="text-sm font-bold mb-1">YOUR RANK</div>
+            <div className="text-2xl font-black">{getCurrentUserRank()}</div>
+            <div className="text-xs opacity-90">
+              {currentLeaderboardView === "friends" ? "Among your friends" : "Global ranking"}
+            </div>
+          </div>
+        </div>
+
+        {/* Leaderboard List */}
+        <div className="flex-1 overflow-y-auto space-y-2">
+          {isLoadingLeaderboard ? (
+            <div className="text-center text-muted-foreground py-8">
+              Loading leaderboard...
+            </div>
+          ) : leaderboardError ? (
+            <div className="text-center text-red-500 py-8">
+              {leaderboardError}
+            </div>
+          ) : (
+            (currentLeaderboardView === "friends" ? friendsLeaderboardData : leaderboardData).map((user, index) => (
+              <div key={user.userId} className={`flex items-center justify-between p-3 rounded-lg border-2 card hover-lift ${
+                user.userId === currentUser?.id 
+                  ? "border-green-500 bg-green-50" 
+                  : "border-border"
+              }`}>
+                <div className="flex items-center gap-3">
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold ${
+                    index === 0 ? "bg-yellow-500" : 
+                    index === 1 ? "bg-gray-400" : 
+                    index === 2 ? "bg-amber-600" : "bg-green-500"
+                  }`}>
+                    {index === 0 ? "🥇" : index === 1 ? "🥈" : index === 2 ? "🥉" : index + 1}
+                  </div>
+                  <div>
+                    <div className="font-bold text-xs text-foreground">
+                      {user.username}
+                      {user.userId === currentUser?.id && " (YOU)"}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      {user.completedTasks} tasks completed
+                    </div>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="text-sm font-bold text-foreground">{user.completedTasks}</div>
+                  <div className="text-xs text-muted-foreground">
+                    {user.completionRate}% rate
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        {/* Refresh Button */}
+        <Button
+          onClick={loadLeaderboardData}
+          disabled={isLoadingLeaderboard}
+          className="w-full hover-lift ripple"
+        >
+          {isLoadingLeaderboard ? "REFRESHING..." : "REFRESH LEADERBOARD"}
+        </Button>
+      </div>
+    </div>
+  )
+
   const ProfileScreen = () => (
     <div className="flex-1 flex flex-col p-4">
       <div className="flex items-center gap-2 mb-4 flex-shrink-0">
@@ -2042,6 +2207,16 @@ export default function GardenApp() {
         </div>
       </div>
 
+      {/* Leaderboard Button */}
+      <div className="flex-shrink-0 mt-4">
+        <Button 
+          onClick={() => setCurrentScreen("leaderboard")}
+          className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 hover-lift ripple"
+        >
+          🏆 LEADERBOARD
+        </Button>
+      </div>
+
       {/* Settings Button */}
       <div className="flex-shrink-0 mt-4">
         <Button 
@@ -2087,6 +2262,8 @@ export default function GardenApp() {
         return <AddFriendsScreen />
       case "profile":
         return <ProfileScreen />
+      case "leaderboard":
+        return <LeaderboardScreen />
       default:
         return <GardenScreen />
     }
@@ -2118,7 +2295,7 @@ export default function GardenApp() {
       <div key={currentScreen} className="screen-enter slide-in flex-1 flex flex-col min-h-0 overflow-hidden">
         {renderScreen()}
       </div>
-      {currentScreen !== "tasks" && currentScreen !== "profile" && <BottomNav />}
+      {currentScreen !== "tasks" && currentScreen !== "profile" && currentScreen !== "leaderboard" && <BottomNav />}
     </div>
   )
 }

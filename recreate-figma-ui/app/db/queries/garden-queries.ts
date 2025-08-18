@@ -373,3 +373,58 @@ export const searchUsersByUsername = async (searchTerm: string, excludeUserId?: 
     throw new Error("Failed to search users");
   }
 };
+
+// Leaderboard operations
+export const getLeaderboardData = async () => {
+  try {
+    const leaderboardData = await db
+      .select({
+        userId: users.id,
+        username: users.username,
+        completedTasks: sql<number>`COALESCE(COUNT(CASE WHEN ${tasks.completed} = true THEN 1 END), 0)`.as('completedTasks'),
+        totalTasks: sql<number>`COALESCE(COUNT(${tasks.id}), 0)`.as('totalTasks'),
+        completionRate: sql<number>`COALESCE(ROUND((COUNT(CASE WHEN ${tasks.completed} = true THEN 1 END)::decimal / NULLIF(COUNT(${tasks.id}), 0) * 100), 1), 0)`.as('completionRate')
+      })
+      .from(users)
+      .leftJoin(tasks, eq(users.id, tasks.userId))
+      .groupBy(users.id, users.username)
+      .orderBy(sql`completedTasks DESC, completionRate DESC`)
+      .limit(50);
+
+    return leaderboardData;
+  } catch (error) {
+    console.error("Error getting leaderboard data:", error);
+    throw new Error("Failed to get leaderboard data");
+  }
+};
+
+export const getFriendsLeaderboard = async (userId: string, friendUsernames: string[]) => {
+  try {
+    // Get leaderboard data for current user and their friends
+    const allUsernames = [userId, ...friendUsernames];
+
+    if (allUsernames.length === 0) {
+      return [];
+    }
+
+    const friendsLeaderboard = await db
+      .select({
+        userId: users.id,
+        username: users.username,
+        completedTasks: sql<number>`COALESCE(COUNT(CASE WHEN ${tasks.completed} = true THEN 1 END), 0)`.as('completedTasks'),
+        totalTasks: sql<number>`COALESCE(COUNT(${tasks.id}), 0)`.as('totalTasks'),
+        completionRate: sql<number>`COALESCE(ROUND((COUNT(CASE WHEN ${tasks.completed} = true THEN 1 END)::decimal / NULLIF(COUNT(${tasks.id}), 0) * 100), 1), 0)`.as('completionRate'),
+        isCurrentUser: sql<boolean>`${users.id} = ${userId}`.as('isCurrentUser')
+      })
+      .from(users)
+      .leftJoin(tasks, eq(users.id, tasks.userId))
+      .where(sql`${users.username} = ANY(${friendUsernames}) OR ${users.id} = ${userId}`)
+      .groupBy(users.id, users.username)
+      .orderBy(sql`completedTasks DESC, completionRate DESC`);
+
+    return friendsLeaderboard;
+  } catch (error) {
+    console.error("Error getting friends leaderboard:", error);
+    throw new Error("Failed to get friends leaderboard");
+  }
+};

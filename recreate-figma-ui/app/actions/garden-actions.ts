@@ -27,7 +27,9 @@ import {
   getAllUsers,
   getUserById,
   getUsersWithGardenItems,
-  searchUsersByUsername
+  searchUsersByUsername,
+  getLeaderboardData,
+  getFriendsLeaderboard
 } from "../db/queries/garden-queries";
 import { 
   InsertUser,
@@ -310,5 +312,24 @@ export async function searchUsersByUsernameAction(searchTerm: string, excludeUse
     return { status: "success", message: "Users found successfully", data: users };
   } catch (error) {
     return { status: "error", message: "Failed to search users" };
+  }
+}
+
+// Leaderboard actions
+export async function getLeaderboardDataAction(): Promise<ActionState> {
+  try {
+    const leaderboardData = await getLeaderboardData();
+    return { status: "success", message: "Leaderboard data retrieved successfully", data: leaderboardData };
+  } catch (error) {
+    return { status: "error", message: "Failed to get leaderboard data" };
+  }
+}
+
+export async function getFriendsLeaderboardAction(userId: string, friendUsernames: string[]): Promise<ActionState> {
+  try {
+    const friendsLeaderboard = await getFriendsLeaderboard(userId, friendUsernames);
+    return { status: "success", message: "Friends leaderboard retrieved successfully", data: friendsLeaderboard };
+  } catch (error) {
+    return { status: "error", message: "Failed to get friends leaderboard" };
   }
 }
