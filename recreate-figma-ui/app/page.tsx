@@ -356,7 +356,7 @@ export default function GardenApp() {
   const [windStrength, setWindStrength] = useState(0.5)
   const [windDirection, setWindDirection] = useState(1) // 1 for right, -1 for left
   const [season, setSeason] = useState<'spring' | 'summer' | 'autumn' | 'winter'>('spring')
-  const [particlesEnabled, setParticlesEnabled] = useState(false) // Debug toggle - temporarily disabled
+  const [particlesEnabled, setParticlesEnabled] = useState(true) // Re-enabled with fixes
 
   // Function to update profile picture
   const updateProfilePicture = (emoji: string) => {
@@ -442,16 +442,14 @@ export default function GardenApp() {
   }, [currentScreen, currentUser])
 
   // Initialize particle system
-  /*
   useEffect(() => {
+    if (!particlesEnabled) return
     // Create initial particles
     const initialParticles = Array.from({ length: 10 }, () => createParticle())
     setParticles(initialParticles)
-  }, [])
-  */
+  }, [particlesEnabled])
 
   // Particle animation loop
-  /*
   useEffect(() => {
     if (!particlesEnabled) return
     const particleInterval = setInterval(() => {
@@ -459,24 +457,21 @@ export default function GardenApp() {
     }, 50) // 20 FPS for smooth animation
 
     return () => clearInterval(particleInterval)
-  }, [windStrength, windDirection, particlesEnabled])
-  */
+  }, [particlesEnabled])
 
   // Wind animation loop
-  /*
   useEffect(() => {
     if (!particlesEnabled) return
     const windInterval = setInterval(() => {
       updateWind()
-    }, 200) // Update wind every 30 seconds
+    }, 200) // Update wind every 200ms
 
     return () => clearInterval(windInterval)
   }, [particlesEnabled])
-  */
 
   // Seasonal change loop
-  /*
   useEffect(() => {
+    if (!particlesEnabled) return
     const seasonInterval = setInterval(() => {
       setSeason(prev => {
         const seasons: Array<'spring' | 'summer' | 'autumn' | 'winter'> = ['spring', 'summer', 'autumn', 'winter']
@@ -487,8 +482,7 @@ export default function GardenApp() {
     }, 30000) // Change season every 30 seconds for demo purposes
 
     return () => clearInterval(seasonInterval)
-  }, [])
-  */
+  }, [particlesEnabled])
 
   // Helper function to refresh leaderboard if on leaderboard screen
   const refreshLeaderboardIfNeeded = () => {
@@ -501,12 +495,12 @@ export default function GardenApp() {
   const refreshLeaderboardInBackground = async () => {
     if (currentUser) {
       try {
-        console.log('Starting background leaderboard refresh for user:', currentUser.username)
+
         
         // Load global leaderboard
         const globalResult = await getLeaderboardDataAction()
         if (globalResult.status === "success" && globalResult.data) {
-          console.log('Global leaderboard updated:', globalResult.data.length, 'users')
+
           setLeaderboardData(globalResult.data)
         } else {
           console.error('Failed to get global leaderboard:', globalResult)
@@ -516,7 +510,7 @@ export default function GardenApp() {
         const friendUsernames = friends.map(f => f.name)
         const friendsResult = await getFriendsLeaderboardAction(currentUser.id, friendUsernames)
         if (friendsResult.status === "success" && friendsResult.data) {
-          console.log('Friends leaderboard updated:', friendsResult.data.length, 'users')
+
           setFriendsLeaderboardData(friendsResult.data)
         } else {
           console.error('Failed to get friends leaderboard:', friendsResult)
@@ -524,12 +518,12 @@ export default function GardenApp() {
         
         // Set refresh timestamp
         setLastLeaderboardRefresh(new Date())
-        console.log('Background leaderboard refresh completed successfully')
+
       } catch (error) {
         console.error("Background leaderboard refresh failed:", error)
       }
     } else {
-      console.log('No current user, skipping background leaderboard refresh')
+      
     }
   }
 
@@ -973,11 +967,11 @@ export default function GardenApp() {
     const task = tasks.find((t) => t.id === taskId)
     if (task && task.progress >= task.target && !task.completed) {
       try {
-        console.log('Completing task:', task.name, 'for user:', currentUser.username)
+
         
         // Update task in database
         await completeTaskAction(taskId)
-        console.log('Task marked as completed in database')
+        
         
         // Update local state - mark as completed
         setTasks((prev: any) => prev.map((t: any) => (t.id === taskId ? { ...t, completed: true } : t)))
@@ -989,29 +983,26 @@ export default function GardenApp() {
         
         // Update current user
         setCurrentUser((prev: any) => prev ? { ...prev, money: newMoney } : null)
-        console.log('Money updated:', newMoney)
+        
         
         // Wait a moment for database to sync, then refresh leaderboard
         setTimeout(async () => {
           try {
-            console.log('Refreshing leaderboard after task completion...')
+
             // Refresh leaderboard data if on leaderboard screen
             refreshLeaderboardIfNeeded()
             
             // Also refresh leaderboard data in background to keep it current
             await refreshLeaderboardInBackground()
-            console.log('Leaderboard refreshed successfully')
+            
             
             // Force immediate leaderboard refresh to ensure data is current
             if (currentScreen === "leaderboard") {
-              console.log('Force refreshing leaderboard data...')
+              
               await loadLeaderboardData()
             }
             
-            // Debug the leaderboard data to see what's happening
-            setTimeout(() => {
-              testLeaderboardData()
-            }, 1000)
+
           } catch (error) {
             console.error('Failed to refresh leaderboard:', error)
           }
@@ -1020,7 +1011,7 @@ export default function GardenApp() {
         // Reset completed task after a longer delay to show completion animation
         setTimeout(async () => {
           try {
-            console.log('Resetting completed task...')
+
             // Reset the completed task to start over
             await resetCompletedTaskAction(taskId)
             
@@ -1032,24 +1023,21 @@ export default function GardenApp() {
             // Wait a moment for database to sync, then refresh leaderboard again
             setTimeout(async () => {
               try {
-                console.log('Refreshing leaderboard after task reset...')
+
                 // Refresh leaderboard after task reset
                 refreshLeaderboardIfNeeded()
                 
                 // Also refresh leaderboard data in background to keep it current
                 await refreshLeaderboardInBackground()
-                console.log('Leaderboard refreshed after task reset')
+                
                 
                 // Force immediate leaderboard refresh to ensure data is current
                 if (currentScreen === "leaderboard") {
-                  console.log('Force refreshing leaderboard data after reset...')
+                  
                   await loadLeaderboardData()
                 }
                 
-                // Debug the leaderboard data to see what's happening
-                setTimeout(() => {
-                  testLeaderboardData()
-                }, 1000)
+
               } catch (error) {
                 console.error('Failed to refresh leaderboard after task reset:', error)
               }
@@ -1544,25 +1532,25 @@ export default function GardenApp() {
       // Load global leaderboard
       const globalResult = await getLeaderboardDataAction()
       if (globalResult.status === "success" && globalResult.data) {
-        console.log("Global leaderboard data:", globalResult.data)
+
         setLeaderboardData(globalResult.data)
       } else {
-        console.log("Global leaderboard result:", globalResult)
+
       }
       
       // Load friends leaderboard
       const friendUsernames = friends.map(f => f.name)
       const friendsResult = await getFriendsLeaderboardAction(currentUser.id, friendUsernames)
       if (friendsResult.status === "success" && friendsResult.data) {
-        console.log("Friends leaderboard data:", friendsResult.data)
+
         setFriendsLeaderboardData(friendsResult.data)
       } else {
-        console.log("Friends leaderboard result:", friendsResult)
+
       }
       
       // Set refresh timestamp
       setLastLeaderboardRefresh(new Date())
-      console.log("Leaderboard data loaded successfully")
+      
     } catch (error) {
       console.error("Failed to load leaderboard data:", error)
       setLeaderboardError("Failed to load leaderboard data")
@@ -1746,7 +1734,9 @@ export default function GardenApp() {
               }`}
               style={{ 
                 left: item.x, 
-                top: item.y
+                top: item.y,
+                transform: `rotate(${windStrength * windDirection * 1}deg)`,
+                transition: 'transform 0.8s ease-out'
               }}
               draggable
               onDragStart={(e) => handleDragStart(e, { type: "garden", item, sourceId: item.id })}
@@ -1796,6 +1786,25 @@ export default function GardenApp() {
 
           {/* UI Indicators Layer */}
           <div className="absolute inset-0 pointer-events-none z-20">
+            {/* Wind Indicator */}
+            <div 
+              className="absolute top-2 right-2 text-xs text-white bg-black/20 px-2 py-1 rounded-full wind-indicator"
+              style={{
+                transform: `translateX(${windDirection * windStrength * 10}px)`,
+                transition: 'transform 0.5s ease-out'
+              }}
+            >
+              💨 {windStrength > 0.8 ? 'Strong' : windStrength > 0.5 ? 'Moderate' : 'Light'} Wind
+            </div>
+
+            {/* Season Indicator */}
+            <div className="absolute top-2 left-2 text-xs text-white bg-black/20 px-2 py-1 rounded-full">
+              {season === 'spring' && '🌸 Spring'}
+              {season === 'summer' && '☀️ Summer'}
+              {season === 'autumn' && '🍂 Autumn'}
+              {season === 'winter' && '❄️ Winter'}
+            </div>
+
             {/* Debug Toggle for Particles */}
             <div className="absolute bottom-2 right-2">
               <button
@@ -1806,6 +1815,47 @@ export default function GardenApp() {
               </button>
             </div>
           </div>
+
+          {/* Particles Layer - Lowest Priority, No Interaction */}
+          {particlesEnabled && (
+            <div className="absolute inset-0 pointer-events-none z-5">
+              {particles.map((particle) => (
+                <div
+                  key={particle.id}
+                  className={`absolute ${
+                    particle.type === 'leaf' ? 'particle-leaf' :
+                    particle.type === 'petal' ? 'particle-petal' :
+                    particle.type === 'sparkle' ? 'particle-sparkle' :
+                    particle.type === 'snowflake' ? 'particle-snowflake' :
+                    'particle-firefly'
+                  }`}
+                  style={{
+                    left: particle.x,
+                    top: particle.y,
+                    transform: `rotate(${particle.rotation}deg) scale(${particle.size})`,
+                    opacity: particle.opacity,
+                    transition: 'transform 0.1s ease-out'
+                  }}
+                >
+                  {particle.type === 'leaf' && (
+                    <span className="text-lg text-green-600 drop-shadow-sm">🍃</span>
+                  )}
+                  {particle.type === 'petal' && (
+                    <span className="text-lg text-pink-400 drop-shadow-sm">🌸</span>
+                  )}
+                  {particle.type === 'sparkle' && (
+                    <span className="text-lg text-yellow-400 drop-shadow-sm">✨</span>
+                  )}
+                  {particle.type === 'snowflake' && (
+                    <span className="text-lg text-blue-400 drop-shadow-sm">❄️</span>
+                  )}
+                  {particle.type === 'firefly' && (
+                    <span className="text-lg text-purple-400 drop-shadow-sm">🔥</span>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
       <div
@@ -2382,17 +2432,7 @@ export default function GardenApp() {
           )}
         </div>
 
-        {/* Debug Info (remove in production) */}
-        <div className="bg-gray-100 rounded-lg p-3 text-xs">
-          <div className="font-bold mb-2">Debug Info:</div>
-          <div>Current User ID: {currentUser?.id}</div>
-          <div>Friends Count: {friends.length}</div>
-          <div>Friends Names: {friends.map(f => f.name).join(", ") || "None"}</div>
-          <div>Global Data Count: {leaderboardData.length}</div>
-          <div>Friends Data Count: {friendsLeaderboardData.length}</div>
-          <div>Current View: {currentLeaderboardView}</div>
-          <div>Last Refresh: {lastLeaderboardRefresh ? lastLeaderboardRefresh.toLocaleTimeString() : "Never"}</div>
-        </div>
+
 
         {/* Refresh Button */}
         <Button
@@ -2401,15 +2441,6 @@ export default function GardenApp() {
           className="w-full hover-lift ripple"
         >
           {isLoadingLeaderboard ? "REFRESHING..." : "REFRESH LEADERBOARD"}
-        </Button>
-        
-        {/* Debug Button */}
-        <Button
-          onClick={testLeaderboardData}
-          variant="outline"
-          className="w-full mt-2 hover-lift ripple"
-        >
-          🐛 DEBUG LEADERBOARD
         </Button>
       </div>
     </div>
@@ -2624,34 +2655,9 @@ export default function GardenApp() {
     }
   }
 
-  // Function to test leaderboard data
-  const testLeaderboardData = async () => {
-    if (!currentUser) return
-    
-    try {
-      console.log('=== LEADERBOARD DEBUG INFO ===')
-      console.log('Current user:', currentUser.username, currentUser.id)
-      console.log('Current tasks:', tasks)
-      console.log('Completed tasks:', tasks.filter(t => t.completed))
-      console.log('Total tasks:', tasks.length)
-      console.log('Completed count:', tasks.filter(t => t.completed).length)
-      
-      // Test the leaderboard query directly
-      const globalResult = await getLeaderboardDataAction()
-      console.log('Global leaderboard result:', globalResult)
-      
-      if (globalResult.status === "success" && globalResult.data) {
-        const currentUserData = globalResult.data.find((u: any) => u.userId === currentUser.id)
-        console.log('Current user in leaderboard:', currentUserData)
-      }
-      
-      console.log('=== END DEBUG INFO ===')
-    } catch (error) {
-      console.error('Debug failed:', error)
-    }
-  }
 
-  // Particle system functions for garden liveliness
+
+  // Particle system functions for garden liveliness - Re-enabled with fixes
   const createParticle = () => {
     // Seasonal particle types
     const seasonalTypes = {
