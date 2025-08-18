@@ -1663,6 +1663,7 @@ export default function GardenApp() {
           className="relative border-2 border-green-600 rounded-lg overflow-hidden flex-shrink-0"
           style={{
             height: "280px",
+            backgroundColor: "#dcfce7",
             backgroundImage: `
               radial-gradient(circle at 25% 25%, #22c55e 2px, transparent 2px),
               radial-gradient(circle at 75% 75%, #16a34a 2px, transparent 2px),
@@ -1856,6 +1857,7 @@ export default function GardenApp() {
           <div 
             className="relative w-full border-2 border-green-600 rounded-lg overflow-hidden flex-1"
             style={{
+              backgroundColor: "#dcfce7",
               backgroundImage: `
                 radial-gradient(circle at 25% 25%, #22c55e 2px, transparent 2px),
                 radial-gradient(circle at 75% 75%, #16a34a 2px, transparent 2px),
