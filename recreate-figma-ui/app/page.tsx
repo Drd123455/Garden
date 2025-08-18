@@ -275,9 +275,9 @@ export default function GardenApp() {
     { id: "7", name: "XMAS TREE", quantity: 2, emoji: "🎄", icon: XmasPng, color: "text-green-600" },
     { id: "8", name: "PALM TREE", quantity: 1, emoji: "🌴", icon: PalmPng, color: "text-green-500" },
     { id: "9", name: "WELL", quantity: 1, emoji: "🪣", icon: WellPng, color: "text-brown-600" },
-    { id: "10", name: "SPRUCE TREE", quantity: 4, emoji: "🌲", icon: SprucePng, color: "text-green-700" },
-    { id: "11", name: "SAKURA TREE", quantity: 2, emoji: "🌸", icon: SakuraPng, color: "text-pink-400" },
-    { id: "12", name: "BONSAI TREE", quantity: 1, emoji: "🌳", icon: BonsaiPng, color: "text-green-600" },
+    { id: "10", name: "SPRUCE TREE", quantity: 4, emoji: "🌲", color: "text-green-700" },
+    { id: "11", name: "SAKURA TREE", quantity: 2, emoji: "🌸", color: "text-pink-400" },
+    { id: "12", name: "BONSAI TREE", quantity: 1, emoji: "🌳", color: "text-green-600" },
   ] as Array<{ id: string; name: string; quantity: number; emoji: string; icon: StaticImageData | string | undefined; color: string }>)
   const [gardenItems, setGardenItems] = useState<GardenItem[]>([
     { id: "1", name: "XMAS TREE", emoji: "🎄", icon: XmasPng, color: "text-green-600", x: 20, y: 20 },
@@ -356,6 +356,7 @@ export default function GardenApp() {
   const [windStrength, setWindStrength] = useState(0.5)
   const [windDirection, setWindDirection] = useState(1) // 1 for right, -1 for left
   const [season, setSeason] = useState<'spring' | 'summer' | 'autumn' | 'winter'>('spring')
+  const [particlesEnabled, setParticlesEnabled] = useState(true) // Debug toggle
 
   // Function to update profile picture
   const updateProfilePicture = async (emoji: string) => {
@@ -1744,7 +1745,7 @@ export default function GardenApp() {
           {gardenItems.map((item) => (
             <div
               key={item.id}
-              className={`absolute cursor-move hover:scale-110 transition-transform touch-draggable hover-lift ${
+              className={`absolute cursor-move hover:scale-110 transition-transform touch-draggable hover-lift z-20 ${
                 droppingItems.has(item.id) ? 'garden-drop' : ''
               } ${
                 touchDragData?.data.type === "garden" && touchDragData.data.sourceId === item.id ? "ring-2 ring-blue-500 ring-opacity-75" : ""
@@ -1792,10 +1793,10 @@ export default function GardenApp() {
           )}
 
           {/* Floating Particles System */}
-          {particles.map((particle) => (
+          {particlesEnabled && particles.map((particle) => (
             <div
               key={particle.id}
-              className={`absolute pointer-events-none z-20 ${
+              className={`absolute pointer-events-none z-10 ${
                 particle.type === 'leaf' ? 'particle-leaf' :
                 particle.type === 'petal' ? 'particle-petal' :
                 particle.type === 'sparkle' ? 'particle-sparkle' :
@@ -1845,6 +1846,16 @@ export default function GardenApp() {
             {season === 'summer' && '☀️ Summer'}
             {season === 'autumn' && '🍂 Autumn'}
             {season === 'winter' && '❄️ Winter'}
+          </div>
+
+          {/* Debug Toggle for Particles */}
+          <div className="absolute bottom-2 right-2">
+            <button
+              onClick={() => setParticlesEnabled(!particlesEnabled)}
+              className="text-xs bg-black/20 text-white px-2 py-1 rounded-full hover:bg-black/40 transition-colors"
+            >
+              {particlesEnabled ? '🌿 Hide Particles' : '🌿 Show Particles'}
+            </button>
           </div>
         </div>
       </div>
@@ -2706,8 +2717,8 @@ export default function GardenApp() {
     
     const particle = {
       id: Math.random().toString(),
-      x: Math.random() * 400, // Garden width
-      y: Math.random() * 300, // Garden height
+      x: Math.random() * 360 + 20, // Garden width (400) - 40 for margins
+      y: Math.random() * 240 + 20, // Garden height (280) - 40 for margins
       vx: (Math.random() - 0.5) * 0.5 + windStrength * windDirection * 0.3,
       vy: Math.random() * 0.3 + 0.1,
       type,
@@ -2734,10 +2745,10 @@ export default function GardenApp() {
         const newRotation = particle.rotation + 1
         
         // Wrap around edges
-        if (newX < -20) newX = 420
-        if (newX > 420) newX = -20
-        if (newY < -20) newY = 320
-        if (newY > 320) newY = -20
+        if (newX < 20) newX = 380
+        if (newX > 380) newX = 20
+        if (newY < 20) newY = 260
+        if (newY > 260) newY = 20
         
         return {
           ...particle,
