@@ -14,14 +14,37 @@ export default function SignUpPage() {
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
 
-  const canSubmit = username.trim() && email.trim() && password && confirmPassword
+  // Email validation function
+  const isValidEmail = (email: string) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    return emailRegex.test(email)
+  }
+
+  const canSubmit = username.trim() && 
+                   email.trim() && 
+                   isValidEmail(email) && 
+                   password && 
+                   confirmPassword
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    
+    // Additional validation
+    if (!email.trim()) {
+      setError("Email is required")
+      return
+    }
+    
+    if (!isValidEmail(email)) {
+      setError("Please enter a valid email address")
+      return
+    }
+    
     if (password !== confirmPassword) {
       setError("Passwords do not match")
       return
     }
+    
     setError(null)
     setSuccess(null)
     setIsSubmitting(true)
@@ -45,8 +68,14 @@ export default function SignUpPage() {
         </div>
 
         <form className="space-y-4" onSubmit={handleSubmit}>
+          <div className="text-xs text-gray-600 text-center mb-2">
+            <span className="text-red-500">*</span> All fields are required
+          </div>
+          
           <div>
-            <label className="block text-xs font-bold text-gray-700 mb-2">USERNAME</label>
+            <label className="block text-xs font-bold text-gray-700 mb-2">
+              USERNAME <span className="text-red-500">*</span>
+            </label>
             <Input
               type="text"
               value={username}
@@ -58,19 +87,30 @@ export default function SignUpPage() {
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-gray-700 mb-2">EMAIL</label>
+            <label className="block text-xs font-bold text-gray-700 mb-2">
+              EMAIL <span className="text-red-500">*</span>
+            </label>
             <Input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full font-bold text-sm"
+              className={`w-full font-bold text-sm ${!email.trim() ? 'border-red-300' : ''}`}
               placeholder="you@example.com"
               required
+              aria-describedby="email-error"
             />
+            {!email.trim() && (
+              <p className="text-xs text-red-500 mt-1">Email is required</p>
+            )}
+            {email.trim() && !isValidEmail(email) && (
+              <p className="text-xs text-red-500 mt-1">Please enter a valid email address</p>
+            )}
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-gray-700 mb-2">PASSWORD</label>
+            <label className="block text-xs font-bold text-gray-700 mb-2">
+              PASSWORD <span className="text-red-500">*</span>
+            </label>
             <Input
               type="password"
               value={password}
@@ -83,7 +123,9 @@ export default function SignUpPage() {
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-gray-700 mb-2">CONFIRM PASSWORD</label>
+            <label className="block text-xs font-bold text-gray-700 mb-2">
+              CONFIRM PASSWORD <span className="text-red-500">*</span>
+            </label>
             <Input
               type="password"
               value={confirmPassword}

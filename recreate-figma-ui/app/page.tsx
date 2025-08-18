@@ -20,6 +20,8 @@ import FlowerPinkPng from "../OneDrive_3_8-12-2025/FlowerPink.png"
 import FlowerRedPng from "../OneDrive_3_8-12-2025/FlowerRed.png"
 import FlowerYellowPng from "../OneDrive_3_8-12-2025/FlowerYellow.png"
 import WellPng from "../OneDrive_3_8-12-2025/Well.png"
+import FountainGif from "../icons/Fountain.gif"
+import WaterfallGif from "../icons/Waterfall.gif"
 import { Button } from "../components/ui/button"
 import { Input } from "../components/ui/input"
 
@@ -39,6 +41,7 @@ import {
   getTasksByUserIdAction,
   updateTaskProgressAction,
   completeTaskAction,
+  resetCompletedTaskAction,
   deleteTaskAction,
   getTaskCountByUserIdAction,
   getCompletedTaskCountByUserIdAction,
@@ -62,7 +65,7 @@ type GardenItem = {
   id: string
   name: string
   emoji?: string
-  icon?: StaticImageData
+  icon?: StaticImageData | string
   color: string
   x: number
   y: number
@@ -80,7 +83,7 @@ type Task = {
   progress: number
   target: number
   emoji?: string
-  icon?: StaticImageData
+  icon?: StaticImageData | string
   color: string
   reward: number
   completed: boolean
@@ -107,7 +110,7 @@ type VisitedGarden = {
 }
 
 // Image mapping for shop items
-const imageMap: { [key: string]: StaticImageData } = {
+const imageMap: { [key: string]: StaticImageData | string } = {
   "ROSES": FlowerRedPng,
   "ORCHIDS": FlowerBluePng,
   "SUNFLOWERS": FlowerYellowPng,
@@ -118,6 +121,8 @@ const imageMap: { [key: string]: StaticImageData } = {
   "SPRUCE TREE": SprucePng,
   "SAKURA TREE": SakuraPng,
   "BONSAI TREE": BonsaiPng,
+  "FOUNTAIN": FountainGif,
+  "WATERFALL": WaterfallGif,
 }
 
 const nearbyFriends = [
@@ -249,8 +254,8 @@ export default function GardenApp() {
     { id: "2", name: "ORCHIDS", price: 175, emoji: "🌺", icon: FlowerBluePng, color: "text-purple-500" },
     { id: "3", name: "SUNFLOWERS", price: 125, emoji: "🌻", icon: FlowerYellowPng, color: "text-yellow-500" },
     { id: "4", name: "POPPIES", price: 100, emoji: "🌸", icon: FlowerPinkPng, color: "text-red-500" },
-    { id: "5", name: "FOUNTAIN", price: 500, emoji: "⛲", color: "text-blue-500" },
-    { id: "6", name: "WATERFALL", price: 750, emoji: "🏔️", color: "text-gray-600" },
+    { id: "5", name: "FOUNTAIN", price: 500, emoji: "⛲", icon: FountainGif, color: "text-blue-500" },
+    { id: "6", name: "WATERFALL", price: 750, emoji: "🌊", icon: WaterfallGif, color: "text-blue-600" },
     { id: "7", name: "XMAS TREE", price: 200, emoji: "🎄", icon: XmasPng, color: "text-green-600" },
     { id: "8", name: "PALM TREE", price: 300, emoji: "🌴", icon: PalmPng, color: "text-green-500" },
     { id: "9", name: "WELL", price: 400, emoji: "🪣", icon: WellPng, color: "text-brown-600" },
@@ -265,20 +270,20 @@ export default function GardenApp() {
     { id: "2", name: "ORCHIDS", quantity: 3, emoji: "🌺", icon: FlowerBluePng, color: "text-purple-500" },
     { id: "3", name: "SUNFLOWERS", quantity: 8, emoji: "🌻", icon: FlowerYellowPng, color: "text-yellow-500" },
     { id: "4", name: "POPPIES", quantity: 12, emoji: "🌸", icon: FlowerPinkPng, color: "text-red-500" },
-    { id: "5", name: "FOUNTAIN", quantity: 1, emoji: "⛲", color: "text-blue-500" },
-    { id: "6", name: "WATERFALL", quantity: 0, emoji: "🏔️", color: "text-gray-600" },
+    { id: "5", name: "FOUNTAIN", quantity: 1, emoji: "⛲", icon: FountainGif, color: "text-blue-500" },
+    { id: "6", name: "WATERFALL", quantity: 0, emoji: "🌊", icon: WaterfallGif, color: "text-blue-600" },
     { id: "7", name: "XMAS TREE", quantity: 2, emoji: "🎄", icon: XmasPng, color: "text-green-600" },
     { id: "8", name: "PALM TREE", quantity: 1, emoji: "🌴", icon: PalmPng, color: "text-green-500" },
     { id: "9", name: "WELL", quantity: 1, emoji: "🪣", icon: WellPng, color: "text-brown-600" },
     { id: "10", name: "SPRUCE TREE", quantity: 4, emoji: "🌲", icon: SprucePng, color: "text-green-700" },
     { id: "11", name: "SAKURA TREE", quantity: 2, emoji: "🌸", icon: SakuraPng, color: "text-pink-400" },
     { id: "12", name: "BONSAI TREE", quantity: 1, emoji: "🌳", icon: BonsaiPng, color: "text-green-600" },
-  ])
+  ] as Array<{ id: string; name: string; quantity: number; emoji: string; icon: StaticImageData | string | undefined; color: string }>)
   const [gardenItems, setGardenItems] = useState<GardenItem[]>([
     { id: "1", name: "XMAS TREE", emoji: "🎄", icon: XmasPng, color: "text-green-600", x: 20, y: 20 },
     { id: "2", name: "SPRUCE TREE", emoji: "🌲", icon: SprucePng, color: "text-green-700", x: 20, y: 200 },
     { id: "3", name: "SAKURA TREE", emoji: "🌸", icon: SakuraPng, color: "text-pink-400", x: 120, y: 180 },
-    { id: "4", name: "WATERFALL", emoji: "🏔️", color: "text-gray-600", x: 180, y: 160 },
+    { id: "4", name: "WATERFALL", emoji: "🌊", icon: WaterfallGif, color: "text-blue-600", x: 180, y: 160 },
     { id: "5", name: "BONSAI TREE", emoji: "🌳", icon: BonsaiPng, color: "text-green-600", x: 240, y: 180 },
     { id: "6", name: "XMAS TREE", emoji: "🎄", icon: XmasPng, color: "text-green-600", x: 120, y: 240 },
   ])
@@ -332,6 +337,7 @@ export default function GardenApp() {
 
   // Profile picture state
   const [profilePicture, setProfilePicture] = useState<string>("😊")
+  const [isProfileEditing, setIsProfileEditing] = useState(false)
 
   // Function to update profile picture
   const updateProfilePicture = async (emoji: string) => {
@@ -339,8 +345,47 @@ export default function GardenApp() {
     // Save to localStorage for persistence
     localStorage.setItem("profilePicture", emoji)
     
+    // Exit edit mode after selecting a new picture
+    setIsProfileEditing(false)
+    
     // TODO: Save to database when user profile update action is implemented
     // await updateUserProfilePictureAction(currentUser.id, emoji)
+  }
+
+  // Helper function to render images (handles both StaticImageData and string paths)
+  const renderImage = (icon: StaticImageData | string | undefined, alt: string, width: number, height: number, className?: string) => {
+    if (!icon) return null
+    
+    if (typeof icon === 'string') {
+      // Handle GIF files and other string paths
+      return (
+        <img 
+          src={icon} 
+          alt={alt} 
+          width={width} 
+          height={height} 
+          className={className}
+        />
+      )
+    } else {
+      // Handle StaticImageData (PNG files)
+      return (
+        <Image 
+          src={icon} 
+          alt={alt} 
+          width={width} 
+          height={height} 
+          className={className}
+        />
+      )
+    }
+  }
+
+  // Function to handle saving profile changes
+  const handleSaveProfile = () => {
+    // TODO: Save profile changes to database when implemented
+    // For now, just exit edit mode
+    setIsProfileEditing(false)
   }
 
   // Load shop items on component mount
@@ -361,6 +406,57 @@ export default function GardenApp() {
       loadLeaderboardData()
     }
   }, [currentScreen, currentUser])
+
+  // Refresh leaderboard when navigating to leaderboard screen
+  useEffect(() => {
+    if (currentScreen === "leaderboard" && currentUser) {
+      // Immediate refresh when navigating to leaderboard
+      loadLeaderboardData()
+      
+      // Also refresh in background to ensure data is current
+      refreshLeaderboardInBackground()
+    }
+  }, [currentScreen, currentUser])
+
+  // Auto-refresh leaderboard every 30 seconds when on leaderboard screen
+  useEffect(() => {
+    if (currentScreen === "leaderboard" && currentUser) {
+      const interval = setInterval(() => {
+        loadLeaderboardData()
+      }, 30000) // Refresh every 30 seconds
+      
+      return () => clearInterval(interval)
+    }
+  }, [currentScreen, currentUser])
+
+  // Helper function to refresh leaderboard if on leaderboard screen
+  const refreshLeaderboardIfNeeded = () => {
+    if (currentScreen === "leaderboard" && currentUser) {
+      loadLeaderboardData()
+    }
+  }
+
+  // Function to refresh leaderboard data in background
+  const refreshLeaderboardInBackground = async () => {
+    if (currentUser) {
+      try {
+        // Load global leaderboard
+        const globalResult = await getLeaderboardDataAction()
+        if (globalResult.status === "success" && globalResult.data) {
+          setLeaderboardData(globalResult.data)
+        }
+        
+        // Load friends leaderboard
+        const friendUsernames = friends.map(f => f.name)
+        const friendsResult = await getFriendsLeaderboardAction(currentUser.id, friendUsernames)
+        if (friendsResult.status === "success" && friendsResult.data) {
+          setFriendsLeaderboardData(friendsResult.data)
+        }
+      } catch (error) {
+        console.error("Background leaderboard refresh failed:", error)
+      }
+    }
+  }
 
   const loadShopItems = async () => {
     try {
@@ -416,6 +512,12 @@ export default function GardenApp() {
         
         // Ensure user has exactly 4 tasks
         await ensureUserHasFourTasks(tasksResult.data)
+        
+        // Refresh leaderboard if on leaderboard screen
+        refreshLeaderboardIfNeeded()
+        
+        // Also refresh leaderboard data in background to keep it current
+        refreshLeaderboardInBackground()
       } else {
         // If no tasks exist, create default tasks
         await createDefaultTasks()
@@ -432,6 +534,9 @@ export default function GardenApp() {
 
       // Set money from user data
       setMoney(currentUser.money)
+      
+      // Refresh leaderboard data to ensure it's current
+      refreshLeaderboardInBackground()
     } catch (error) {
       console.error("Failed to load user data:", error)
     }
@@ -449,7 +554,9 @@ export default function GardenApp() {
         { name: "WELL", quantity: 1, emoji: "🪣", color: "text-brown-600" },
         { name: "SPRUCE TREE", quantity: 4, emoji: "🌲", color: "text-green-700" },
         { name: "SAKURA TREE", quantity: 2, emoji: "🌸", color: "text-pink-400" },
-        { name: "BONSAI TREE", quantity: 1, emoji: "🌳", color: "text-green-600" }
+        { name: "BONSAI TREE", quantity: 1, emoji: "🌳", color: "text-green-600" },
+        { name: "FOUNTAIN", quantity: 1, emoji: "⛲", color: "text-blue-500" },
+        { name: "WATERFALL", quantity: 1, emoji: "🌊", color: "text-blue-600" }
       ]
 
       for (const item of defaultItems) {
@@ -468,7 +575,7 @@ export default function GardenApp() {
         id: Date.now().toString() + Math.random(),
         ...item,
         icon: imageMap[item.name] || undefined
-      }))
+      })) as Array<{ id: string; name: string; quantity: number; emoji: string; icon: StaticImageData | string | undefined; color: string }>
       setInventoryItems(itemsWithIcons)
     } catch (error) {
       console.error("Failed to create default inventory:", error)
@@ -502,6 +609,12 @@ export default function GardenApp() {
         icon: getTaskIcon(task.name)
       }))
       setTasks(tasksWithIcons)
+      
+      // Refresh leaderboard if on leaderboard screen
+      refreshLeaderboardIfNeeded()
+      
+      // Also refresh leaderboard data in background to keep it current
+      refreshLeaderboardInBackground()
     } catch (error) {
       console.error("Failed to create default tasks:", error)
     }
@@ -547,6 +660,12 @@ export default function GardenApp() {
             setTasks((prev: any) => [...prev, newTask])
           }
         }
+        
+        // Refresh leaderboard if on leaderboard screen
+        refreshLeaderboardIfNeeded()
+        
+        // Also refresh leaderboard data in background to keep it current
+        refreshLeaderboardInBackground()
       }
     } catch (error) {
       console.error("Failed to ensure user has four tasks:", error)
@@ -793,47 +912,30 @@ export default function GardenApp() {
         // Update current user
         setCurrentUser((prev: any) => prev ? { ...prev, money: newMoney } : null)
         
-        // Replace completed task with a new random task after a short delay
+        // Refresh leaderboard data after task completion
+        refreshLeaderboardIfNeeded()
+        
+        // Also refresh leaderboard data in background to keep it current
+        refreshLeaderboardInBackground()
+        
+        // Reset completed task after a short delay instead of replacing it
         setTimeout(async () => {
           try {
-            // Get current task names to exclude from new task
-            const currentTaskNames = tasks.map(t => t.name)
+            // Reset the completed task to start over
+            await resetCompletedTaskAction(taskId)
             
-            // Get a new random task
-            const newTaskTemplate = getRandomTask(currentTaskNames)
+            // Update local state - reset progress and mark as not completed
+            setTasks((prev: any) => prev.map((t: any) => 
+              t.id === taskId ? { ...t, progress: 0, completed: false } : t
+            ))
             
-            // Create new task in database
-            const newTaskResult = await createTaskAction({
-              userId: currentUser.id,
-              name: newTaskTemplate.name,
-              progress: 0,
-              target: newTaskTemplate.target,
-              emoji: newTaskTemplate.emoji,
-              color: newTaskTemplate.color,
-              reward: newTaskTemplate.reward,
-              completed: false
-            })
+            // Refresh leaderboard after task reset
+            refreshLeaderboardIfNeeded()
             
-            if (newTaskResult.status === "success" && newTaskResult.data) {
-              // Remove completed task from local state
-              setTasks((prev: any) => prev.filter((t: any) => t.id !== taskId))
-              
-              // Add new task to local state
-              const newTask = {
-                id: newTaskResult.data.id,
-                name: newTaskTemplate.name,
-                progress: 0,
-                target: newTaskTemplate.target,
-                emoji: newTaskTemplate.emoji,
-                color: newTaskTemplate.color,
-                reward: newTaskTemplate.reward,
-                completed: false,
-                icon: getTaskIcon(newTaskTemplate.name)
-              }
-              setTasks((prev: any) => [...prev, newTask])
-            }
+            // Also refresh leaderboard data in background to keep it current
+            refreshLeaderboardInBackground()
           } catch (error) {
-            console.error("Failed to replace completed task:", error)
+            console.error("Failed to reset completed task:", error)
           }
         }, 1000) // 1 second delay to show completion animation
         
@@ -858,6 +960,12 @@ export default function GardenApp() {
             t.id === taskId ? { ...t, progress: newProgress } : t
           )
         )
+        
+        // Refresh leaderboard data if on leaderboard screen
+        refreshLeaderboardIfNeeded()
+        
+        // Also refresh leaderboard data in background to keep it current
+        refreshLeaderboardInBackground()
       } catch (error) {
         console.error("Failed to update task progress:", error)
       }
@@ -1435,15 +1543,15 @@ export default function GardenApp() {
             : 'hover:bg-muted/80'
         }`}>
               {item.icon ? (
-                <Image
-                  src={item.icon}
-                  alt={item.name}
-                  width={40}
-                  height={40}
-                  className={`h-10 w-10 object-contain transition-all duration-300 ${
+                renderImage(
+                  item.icon,
+                  item.name,
+                  40,
+                  40,
+                  `h-10 w-10 object-contain transition-all duration-300 ${
                     purchasedItems.has(item.name) ? 'scale-125' : ''
-                  }`}
-                />
+                  }`
+                )
               ) : (
                 <span className={`text-2xl ${item.color} transition-all duration-300 ${
                   purchasedItems.has(item.name) ? 'scale-125' : ''
@@ -1482,7 +1590,7 @@ export default function GardenApp() {
           <div className="w-6 h-6 bg-green-600 rounded-full flex items-center justify-center text-white text-xs font-bold">
             {profilePicture}
           </div>
-          <span className="text-sm font-bold text-foreground">Garden</span>
+          <span className="text-sm font-bold text-foreground">GARDEN</span>
           <div></div>
         </div>
         <div
@@ -1513,9 +1621,7 @@ export default function GardenApp() {
             <path d="M0,45 Q25,35 50,45 T100,40 L100,50 Q75,60 50,50 T0,55 Z" fill="#1d4ed8" opacity="0.6" />
           </svg>
 
-          <div className="absolute inset-2 text-xs text-green-800 font-bold pointer-events-none z-10">
-            Drag items from inventory below • Touch & drag on mobile
-          </div>
+
           {gardenItems.map((item) => (
             <div
               key={item.id}
@@ -1532,7 +1638,7 @@ export default function GardenApp() {
               onTouchEnd={handleTouchEnd}
             >
               {item.icon ? (
-                <Image src={item.icon} alt={item.name} width={40} height={40} className="h-10 w-10 object-contain drop-shadow-sm" />
+                renderImage(item.icon, item.name, 40, 40, "h-10 w-10 object-contain drop-shadow-sm")
               ) : (
                 <span className={`text-2xl ${item.color} drop-shadow-sm`}>{item.emoji}</span>
               )}
@@ -1546,13 +1652,13 @@ export default function GardenApp() {
               style={{ left: dragPreview.x, top: dragPreview.y }}
             >
               {dragPreview.item.icon ? (
-                <Image 
-                  src={dragPreview.item.icon} 
-                  alt={dragPreview.item.name} 
-                  width={40} 
-                  height={40} 
-                  className="h-10 w-10 object-contain drop-shadow-lg" 
-                />
+                renderImage(
+                  dragPreview.item.icon, 
+                  dragPreview.item.name, 
+                  40, 
+                  40, 
+                  "h-10 w-10 object-contain drop-shadow-lg"
+                )
               ) : (
                 <span className={`text-2xl ${dragPreview.item.color} drop-shadow-lg`}>
                   {dragPreview.item.emoji}
@@ -1593,15 +1699,15 @@ export default function GardenApp() {
                 purchasedItems.has(item.name) ? "bg-green-100 shadow-lg item-highlight pulse-glow" : ""
               }`}>
                 {item.icon ? (
-                  <Image
-                    src={item.icon}
-                    alt={item.name}
-                    width={32}
-                    height={32}
-                    className={`h-8 w-8 object-contain transition-all duration-300 ${
+                  renderImage(
+                    item.icon,
+                    item.name,
+                    32,
+                    32,
+                    `h-8 w-8 object-contain transition-all duration-300 ${
                       purchasedItems.has(item.name) ? "scale-110" : ""
-                    }`}
-                  />
+                    }`
+                  )
                 ) : (
                   <span className={`text-lg ${item.color} transition-all duration-300 ${
                     purchasedItems.has(item.name) ? "scale-110" : ""
@@ -1705,13 +1811,13 @@ export default function GardenApp() {
                 }}
               >
                 {item.icon ? (
-                  <Image
-                    src={item.icon}
-                    alt={item.name}
-                    width={40}
-                    height={40}
-                    className="h-10 w-10 object-contain drop-shadow-sm"
-                  />
+                  renderImage(
+                    item.icon,
+                    item.name,
+                    40,
+                    40,
+                    "h-10 w-10 object-contain drop-shadow-sm"
+                  )
                 ) : (
                   <span className={`text-3xl ${item.color} drop-shadow-sm`}>{item.emoji}</span>
                 )}
@@ -1856,13 +1962,13 @@ export default function GardenApp() {
               className={`flex items-center gap-4 p-3 rounded-lg card ${task.completed ? "bg-green-100" : "bg-muted"}`}
             >
             {task.icon ? (
-              <Image
-                src={task.icon}
-                alt={task.name}
-                width={32}
-                height={32}
-                className={`h-8 w-8 object-contain ${task.completed ? "opacity-50" : ""}`}
-              />
+              renderImage(
+                task.icon,
+                task.name,
+                32,
+                32,
+                `h-8 w-8 object-contain ${task.completed ? "opacity-50" : ""}`
+              )
             ) : (
               <span className={`text-2xl ${task.color} ${task.completed ? "opacity-50" : ""}`}>{task.emoji}</span>
             )}
@@ -2169,23 +2275,63 @@ export default function GardenApp() {
           <h2 className="text-2xl font-black text-foreground mb-2">{username.toUpperCase()}</h2>
           <p className="text-sm text-muted-foreground mb-3">GARDEN MASTER</p>
           
-          {/* Profile Picture Picker */}
-          <div className="bg-muted rounded-lg p-3 mb-3">
-            <p className="text-xs text-muted-foreground mb-2">Change Profile Picture</p>
-            <div className="grid grid-cols-8 gap-2 max-h-32 overflow-y-auto">
-              {["😊", "😎", "🤠", "👻", "🐱", "🐶", "🦊", "🐸", "🐼", "🐨", "🦁", "🐯", "🐮", "🐷", "🐸", "🐙", "🦄", "🌈", "⭐", "🎮", "🎨", "🎭", "🎪", "🎯", "🎲", "🎸", "🎹", "🎺", "🎻", "🎼", "🎵", "🎶", "🎤", "🎧", "🎬", "🎭", "🎨", "🎪", "🎯", "🎲", "🎸", "🎹", "🎺", "🎻", "🎼", "🎵", "🎶", "🎤", "🎧", "🎬"].slice(0, 32).map((emoji, index) => (
-                <button
-                  key={index}
-                  onClick={() => updateProfilePicture(emoji)}
-                  className={`text-2xl p-1 rounded hover:bg-muted/80 hover-scale ${
-                    profilePicture === emoji ? "bg-green-200 ring-2 ring-green-500 celebration" : ""
-                  }`}
-                >
-                  {emoji}
-                </button>
-              ))}
+          {/* Edit Mode Indicator */}
+          {isProfileEditing && (
+            <div className="bg-blue-100 border border-blue-300 rounded-lg p-2 mb-3">
+              <p className="text-xs text-blue-700 font-medium text-center">
+                ✏️ EDITING PROFILE - Click SAVE when done or CANCEL to discard changes
+              </p>
             </div>
+          )}
+          
+          {/* Edit Button */}
+          <div className="mb-3">
+            <Button
+              onClick={() => {
+                if (isProfileEditing) {
+                  // Save profile changes
+                  handleSaveProfile()
+                } else {
+                  // Enter edit mode
+                  setIsProfileEditing(true)
+                }
+              }}
+              className="bg-green-600 hover:bg-green-700 text-white font-bold text-sm px-4 py-2 hover-lift ripple"
+            >
+              {isProfileEditing ? "SAVE" : "EDIT PROFILE"}
+            </Button>
+            
+            {/* Cancel Button - Only show when editing */}
+            {isProfileEditing && (
+              <Button
+                onClick={() => setIsProfileEditing(false)}
+                variant="outline"
+                className="ml-2 bg-gray-500 hover:bg-gray-600 text-white font-bold text-sm px-4 py-2 hover-lift ripple"
+              >
+                CANCEL
+              </Button>
+            )}
           </div>
+          
+          {/* Profile Picture Picker - Only show when editing */}
+          {isProfileEditing && (
+            <div className="bg-muted rounded-lg p-3 mb-3">
+              <p className="text-xs text-muted-foreground mb-2">Change Profile Picture</p>
+              <div className="grid grid-cols-8 gap-2 max-h-32 overflow-y-auto">
+                {["😊", "😎", "🤠", "👻", "🐱", "🐶", "🦊", "🐸", "🐼", "🐨", "🦁", "🐯", "🐮", "🐷", "🐸", "🐙", "🦄", "🌈", "⭐", "🎮", "🎨", "🎭", "🎪", "🎯", "🎲", "🎸", "🎹", "🎺", "🎻", "🎼", "🎵", "🎶", "🎤", "🎧", "🎬", "🎭", "🎨", "🎪", "🎯", "🎲", "🎸", "🎹", "🎺", "🎻", "🎼", "🎵", "🎶", "🎤", "🎧", "🎬"].slice(0, 32).map((emoji, index) => (
+                  <button
+                    key={index}
+                    onClick={() => updateProfilePicture(emoji)}
+                    className={`text-2xl p-1 rounded hover:bg-muted/80 hover-scale ${
+                      profilePicture === emoji ? "bg-green-200 ring-2 ring-green-500 celebration" : ""
+                    }`}
+                  >
+                    {emoji}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -2198,15 +2344,15 @@ export default function GardenApp() {
               key={task.id}
               className={`flex items-center gap-3 p-3 rounded-lg card ${task.completed ? "bg-green-100" : "bg-muted"}`}
             >
-              {task.icon ? (
-                <Image
-                  src={task.icon}
-                  alt={task.name}
-                  width={24}
-                  height={24}
-                  className={`h-6 w-6 object-contain ${task.completed ? "opacity-50" : ""}`}
-                />
-              ) : (
+                          {task.icon ? (
+              renderImage(
+                task.icon,
+                task.name,
+                24,
+                24,
+                `h-6 w-6 object-contain ${task.completed ? "opacity-50" : ""}`
+              )
+            ) : (
                 <span className={`text-lg ${task.color} ${task.completed ? "opacity-50" : ""}`}>{task.emoji}</span>
               )}
               <div className="flex-1">
@@ -2275,24 +2421,24 @@ export default function GardenApp() {
     </div>
   )
 
-     const addFriend = async (friendToAdd: (typeof nearbyFriends)[0]) => {
-     if (!friends.some((friend) => friend.name === friendToAdd.name)) {
-       try {
-         // Add friend to database
-         await createFriendAction({
-           userId: currentUser.id,
-           friendName: friendToAdd.name,
-           emoji: friendToAdd.emoji,
-           color: friendToAdd.color
-         })
-         
-         // Update local state
-         setFriends([...friends, friendToAdd])
-       } catch (error) {
-         console.error("Failed to add friend:", error)
-       }
-     }
-   }
+  const addFriend = async (friendToAdd: (typeof nearbyFriends)[0]) => {
+    if (!friends.some((friend) => friend.name === friendToAdd.name)) {
+      try {
+        // Add friend to database
+        await createFriendAction({
+          userId: currentUser.id,
+          friendName: friendToAdd.name,
+          emoji: friendToAdd.emoji,
+          color: friendToAdd.color
+        })
+        
+        // Update local state
+        setFriends([...friends, friendToAdd])
+      } catch (error) {
+        console.error("Failed to add friend:", error)
+      }
+    }
+  }
 
   const renderScreen = () => {
     switch (currentScreen) {

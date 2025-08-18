@@ -210,6 +210,19 @@ export const completeTask = async (taskId: string) => {
   }
 };
 
+export const resetCompletedTask = async (taskId: string) => {
+  try {
+    const [resetTask] = await db.update(tasks)
+      .set({ completed: false, progress: 0 })
+      .where(eq(tasks.id, taskId))
+      .returning();
+    return resetTask;
+  } catch (error) {
+    console.error("Error resetting completed task:", error);
+    throw new Error("Failed to reset completed task");
+  }
+};
+
 export const deleteTask = async (taskId: string) => {
   try {
     await db.delete(tasks).where(eq(tasks.id, taskId));

@@ -18,6 +18,7 @@ export default function TasksPage() {
   const [tasks, setTasks] = useState<Task[]>([])
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+  const [currentUser, setCurrentUser] = useState<any>(null)
 
   const fetchTasks = async () => {
     try {
@@ -25,7 +26,13 @@ export default function TasksPage() {
       const supabase = getSupabaseClient()
       console.log('Supabase client:', supabase)
       
-      const { data, error: supabaseError } = await supabase.from('tasks').select('*')
+      // Get current user from session
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        setCurrentUser(user)
+      }
+      
+      const { data, error: supabaseError } = await supabase.from('tasks').select('*').eq('userId', user?.id || '')
       
       if (supabaseError) {
         console.error('Supabase error:', supabaseError)
@@ -42,6 +49,11 @@ export default function TasksPage() {
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleTaskCreated = () => {
+    // Refresh tasks after creation
+    fetchTasks()
   }
 
   useEffect(() => {
@@ -73,7 +85,11 @@ export default function TasksPage() {
   return (
     <div className="container mx-auto p-8">
       <h1 className="text-3xl font-bold mb-8">Task List</h1>
-      <NewTodo reload={fetchTasks} />
+      <NewTodo 
+        reload={fetchTasks} 
+        currentUser={currentUser}
+        onTaskCreated={handleTaskCreated}
+      />
       <div className="mt-8">
         {tasks.length === 0 ? (
           <p className="p-4 bg-gray-100 text-gray-600 rounded">

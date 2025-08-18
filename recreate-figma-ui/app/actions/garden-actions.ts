@@ -16,6 +16,7 @@ import {
   getTasksByUserId,
   updateTaskProgress,
   completeTask,
+  resetCompletedTask,
   deleteTask,
   getTaskCountByUserId,
   getCompletedTaskCountByUserId,
@@ -194,6 +195,16 @@ export async function completeTaskAction(taskId: string): Promise<ActionState> {
     return { status: "success", message: "Task completed successfully", data: completedTask };
   } catch (error) {
     return { status: "error", message: "Failed to complete task" };
+  }
+}
+
+export async function resetCompletedTaskAction(taskId: string): Promise<ActionState> {
+  try {
+    const resetTask = await resetCompletedTask(taskId);
+    revalidatePath("/tasks");
+    return { status: "success", message: "Task reset successfully", data: resetTask };
+  } catch (error) {
+    return { status: "error", message: "Failed to reset task" };
   }
 }
 
