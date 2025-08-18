@@ -356,7 +356,7 @@ export default function GardenApp() {
   const [windStrength, setWindStrength] = useState(0.5)
   const [windDirection, setWindDirection] = useState(1) // 1 for right, -1 for left
   const [season, setSeason] = useState<'spring' | 'summer' | 'autumn' | 'winter'>('spring')
-  const [particlesEnabled, setParticlesEnabled] = useState(true) // Re-enabled with fixes
+  const [particlesEnabled, setParticlesEnabled] = useState(false) // Temporarily disabled to test clicking
 
   // Function to update profile picture
   const updateProfilePicture = (emoji: string) => {
@@ -1707,15 +1707,7 @@ export default function GardenApp() {
         <div
           className="relative bg-green-400 border-2 border-green-600 rounded-lg overflow-hidden flex-shrink-0"
           style={{
-            height: "280px",
-            backgroundImage: `
-              radial-gradient(circle at 25% 25%, #22c55e 2px, transparent 2px),
-              radial-gradient(circle at 75% 75%, #16a34a 2px, transparent 2px),
-              radial-gradient(circle at 25% 75%, #15803d 1px, transparent 1px),
-              radial-gradient(circle at 75% 25%, #22c55e 1px, transparent 1px)
-            `,
-            backgroundSize: "16px 16px",
-            backgroundPosition: "0 0, 0 0, 8px 8px, 8px 8px",
+            height: "280px"
           }}
           onDragOver={handleDragOver}
           onDrop={handleDrop}
@@ -1723,6 +1715,13 @@ export default function GardenApp() {
           onTouchEnd={handleTouchEnd}
           data-garden-area
         >
+          {/* Test Button to Check Clicking */}
+          <button
+            onClick={() => alert('Garden area clicking works!')}
+            className="absolute top-2 left-2 z-50 bg-red-500 text-white px-2 py-1 rounded text-xs"
+          >
+            TEST CLICK
+          </button>
           {/* Garden Items Layer - Highest Priority for Interaction */}
           {gardenItems.map((item) => (
             <div
@@ -2767,6 +2766,7 @@ export default function GardenApp() {
   return (
     <div className="w-full h-[800px] max-w-sm mx-auto bg-background rounded-3xl shadow-2xl overflow-hidden flex flex-col">
       <style jsx>{`
+        /* Temporarily disabled animations to test clicking
         @keyframes float {
           0%, 100% { transform: translateY(0px) rotate(0deg); }
           50% { transform: translateY(-10px) rotate(180deg); }
@@ -2815,6 +2815,7 @@ export default function GardenApp() {
         .wind-indicator {
           animation: sway 3s ease-in-out infinite;
         }
+        */
       `}</style>
       <div key={currentScreen} className="screen-enter slide-in flex-1 flex flex-col min-h-0 overflow-hidden">
         {renderScreen()}
