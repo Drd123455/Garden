@@ -445,7 +445,7 @@ export default function GardenApp() {
   useEffect(() => {
     if (!particlesEnabled) return
     // Create initial particles
-    const initialParticles = Array.from({ length: 10 }, () => createParticle())
+    const initialParticles = Array.from({ length: 5 }, () => createParticle()) // Reduced from 10 to 5
     setParticles(initialParticles)
   }, [particlesEnabled])
 
@@ -454,7 +454,7 @@ export default function GardenApp() {
     if (!particlesEnabled) return
     const particleInterval = setInterval(() => {
       updateParticles()
-    }, 50) // 20 FPS for smooth animation
+    }, 100) // Reduced from 50ms to 100ms to reduce re-renders
 
     return () => clearInterval(particleInterval)
   }, [particlesEnabled])
@@ -464,7 +464,7 @@ export default function GardenApp() {
     if (!particlesEnabled) return
     const windInterval = setInterval(() => {
       updateWind()
-    }, 200) // Update wind every 200ms
+    }, 500) // Increased from 200ms to 500ms to reduce re-renders
 
     return () => clearInterval(windInterval)
   }, [particlesEnabled])
@@ -479,7 +479,7 @@ export default function GardenApp() {
         const nextIndex = (currentIndex + 1) % seasons.length
         return seasons[nextIndex]
       })
-    }, 30000) // Change season every 30 seconds for demo purposes
+    }, 60000) // Increased from 30 seconds to 60 seconds to reduce re-renders
 
     return () => clearInterval(seasonInterval)
   }, [particlesEnabled])
@@ -2698,6 +2698,9 @@ export default function GardenApp() {
 
   const updateParticles = () => {
     setParticles(prev => {
+      // Only update if there are actually particles to update
+      if (prev.length === 0) return prev
+      
       const updated = prev.map(particle => {
         // Update position
         let newX = particle.x + particle.vx
@@ -2723,13 +2726,13 @@ export default function GardenApp() {
         }
       })
       
-      // Remove old particles and add new ones
-      if (updated.length < 15) {
+      // Only add new particles occasionally to reduce re-renders
+      if (updated.length < 10 && Math.random() < 0.3) {
         updated.push(createParticle())
       }
       
-      // Remove particles that are too old (randomly)
-      if (Math.random() < 0.02) {
+      // Only remove particles occasionally to reduce re-renders
+      if (Math.random() < 0.01) {
         return updated.slice(1)
       }
       
@@ -2738,14 +2741,18 @@ export default function GardenApp() {
   }
 
   const updateWind = () => {
-    // Gradually change wind
-    setWindStrength(prev => {
-      const change = (Math.random() - 0.5) * 0.1
-      return Math.max(0.1, Math.min(1.5, prev + change))
-    })
+    // Only update wind occasionally to reduce re-renders
+    if (Math.random() < 0.5) {
+      setWindStrength(prev => {
+        const change = (Math.random() - 0.5) * 0.05 // Reduced change amount
+        const newStrength = Math.max(0.1, Math.min(1.5, prev + change))
+        // Only update if change is significant
+        return Math.abs(newStrength - prev) > 0.01 ? newStrength : prev
+      })
+    }
     
-    // Occasionally change wind direction
-    if (Math.random() < 0.01) {
+    // Only change wind direction occasionally
+    if (Math.random() < 0.005) {
       setWindDirection(prev => prev * -1)
     }
   }
