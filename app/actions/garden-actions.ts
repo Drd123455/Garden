@@ -16,11 +16,21 @@ import {
   getTasksByUserId,
   updateTaskProgress,
   completeTask,
+  resetCompletedTask,
+  deleteTask,
+  getTaskCountByUserId,
+  getCompletedTaskCountByUserId,
   createFriend,
   getFriendsByUserId,
   deleteFriend,
   getAllShopItems,
-  createShopItem
+  createShopItem,
+  getAllUsers,
+  getUserById,
+  getUsersWithGardenItems,
+  searchUsersByUsername,
+  getLeaderboardData,
+  getFriendsLeaderboard
 } from "../db/queries/garden-queries";
 import { 
   InsertUser,
@@ -182,9 +192,51 @@ export async function completeTaskAction(taskId: string): Promise<ActionState> {
   try {
     const completedTask = await completeTask(taskId);
     revalidatePath("/tasks");
+    revalidatePath("/leaderboard");
+    revalidatePath("/");
     return { status: "success", message: "Task completed successfully", data: completedTask };
   } catch (error) {
     return { status: "error", message: "Failed to complete task" };
+  }
+}
+
+export async function resetCompletedTaskAction(taskId: string): Promise<ActionState> {
+  try {
+    const resetTask = await resetCompletedTask(taskId);
+    revalidatePath("/tasks");
+    revalidatePath("/leaderboard");
+    revalidatePath("/");
+    return { status: "success", message: "Task reset successfully", data: resetTask };
+  } catch (error) {
+    return { status: "error", message: "Failed to reset task" };
+  }
+}
+
+export async function deleteTaskAction(taskId: string): Promise<ActionState> {
+  try {
+    await deleteTask(taskId);
+    revalidatePath("/tasks");
+    return { status: "success", message: "Task deleted successfully" };
+  } catch (error) {
+    return { status: "error", message: "Failed to delete task" };
+  }
+}
+
+export async function getTaskCountByUserIdAction(userId: string): Promise<ActionState> {
+  try {
+    const count = await getTaskCountByUserId(userId);
+    return { status: "success", message: "Task count retrieved successfully", data: count };
+  } catch (error) {
+    return { status: "error", message: "Failed to get task count" };
+  }
+}
+
+export async function getCompletedTaskCountByUserIdAction(userId: string): Promise<ActionState> {
+  try {
+    const count = await getCompletedTaskCountByUserId(userId);
+    return { status: "success", message: "Completed task count retrieved successfully", data: count };
+  } catch (error) {
+    return { status: "error", message: "Failed to get completed task count" };
   }
 }
 
@@ -235,5 +287,64 @@ export async function createShopItemAction(data: InsertShopItem): Promise<Action
     return { status: "success", message: "Shop item created successfully", data: newItem };
   } catch (error) {
     return { status: "error", message: "Failed to create shop item" };
+  }
+}
+
+// World page actions
+export async function getAllUsersAction(): Promise<ActionState> {
+  try {
+    const users = await getAllUsers();
+    return { status: "success", message: "Users retrieved successfully", data: users };
+  } catch (error) {
+    return { status: "error", message: "Failed to get users" };
+  }
+}
+
+export async function getUserByIdAction(userId: string): Promise<ActionState> {
+  try {
+    const user = await getUserById(userId);
+    if (!user) {
+      return { status: "error", message: "User not found" };
+    }
+    return { status: "success", message: "User retrieved successfully", data: user };
+  } catch (error) {
+    return { status: "error", message: "Failed to get user" };
+  }
+}
+
+export async function getUsersWithGardenItemsAction(): Promise<ActionState> {
+  try {
+    const usersWithGardens = await getUsersWithGardenItems();
+    return { status: "success", message: "Users with gardens retrieved successfully", data: usersWithGardens };
+  } catch (error) {
+    return { status: "error", message: "Failed to get users with gardens" };
+  }
+}
+
+export async function searchUsersByUsernameAction(searchTerm: string, excludeUserId?: string): Promise<ActionState> {
+  try {
+    const users = await searchUsersByUsername(searchTerm, excludeUserId);
+    return { status: "success", message: "Users found successfully", data: users };
+  } catch (error) {
+    return { status: "error", message: "Failed to search users" };
+  }
+}
+
+// Leaderboard actions
+export async function getLeaderboardDataAction(): Promise<ActionState> {
+  try {
+    const leaderboardData = await getLeaderboardData();
+    return { status: "success", message: "Leaderboard data retrieved successfully", data: leaderboardData };
+  } catch (error) {
+    return { status: "error", message: "Failed to get leaderboard data" };
+  }
+}
+
+export async function getFriendsLeaderboardAction(userId: string, friendUsernames: string[]): Promise<ActionState> {
+  try {
+    const friendsLeaderboard = await getFriendsLeaderboard(userId, friendUsernames);
+    return { status: "success", message: "Friends leaderboard retrieved successfully", data: friendsLeaderboard };
+  } catch (error) {
+    return { status: "error", message: "Failed to get friends leaderboard" };
   }
 }

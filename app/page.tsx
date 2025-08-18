@@ -5,7 +5,7 @@ import firebaseApp from "../firebase"
 
 import { useState, useEffect } from "react"
 import Image, { StaticImageData }  from "next/image"
-import { ShoppingBag, Sprout, Globe2, Settings } from "lucide-react"
+import { ShoppingBag, Sprout, Globe2, Settings, User } from "lucide-react"
 import XmasPng from "../Trees/Christmas.png"
 import PalmPng from "../Trees/Palm.png"
 import SprucePng from "../Trees/Spruce.png"
@@ -20,8 +20,12 @@ import FlowerPinkPng from "../OneDrive_3_8-12-2025/FlowerPink.png"
 import FlowerRedPng from "../OneDrive_3_8-12-2025/FlowerRed.png"
 import FlowerYellowPng from "../OneDrive_3_8-12-2025/FlowerYellow.png"
 import WellPng from "../OneDrive_3_8-12-2025/Well.png"
+import FountainGif from "../icons/Fountain.gif"
+import WaterfallGif from "../icons/Waterfall.gif"
 import { Button } from "../components/ui/button"
 import { Input } from "../components/ui/input"
+import GardenCanvas from "./components/GardenCanvas"
+import type { GardenItem, Particle } from "./types"
 
 // Import database actions
 import { 
@@ -39,22 +43,27 @@ import {
   getTasksByUserIdAction,
   updateTaskProgressAction,
   completeTaskAction,
+  resetCompletedTaskAction,
+  deleteTaskAction,
+  getTaskCountByUserIdAction,
+  getCompletedTaskCountByUserIdAction,
   createFriendAction,
   getFriendsByUserIdAction,
-  getAllShopItemsAction
+  getAllShopItemsAction,
+  getAllUsersAction,
+  getUserByIdAction,
+  getUsersWithGardenItemsAction,
+  searchUsersByUsernameAction,
+  getLeaderboardDataAction,
+  getFriendsLeaderboardAction
 } from "./actions/garden-actions"
 
-type Screen = "shop" | "garden" | "world" | "tasks" | "add-friends"
+// Import task pool utilities
+import { getRandomTasks, getRandomTask, TaskTemplate } from "./utils/taskPool"
 
-type GardenItem = {
-  id: string
-  name: string
-  emoji?: string
-  icon?: StaticImageData
-  color: string
-  x: number
-  y: number
-}
+type Screen = "shop" | "garden" | "world" | "tasks" | "add-friends" | "profile" | "leaderboard"
+
+
 
 type DragData = {
   type: "inventory" | "garden"
@@ -68,7 +77,7 @@ type Task = {
   progress: number
   target: number
   emoji?: string
-  icon?: StaticImageData
+  icon?: StaticImageData | string
   color: string
   reward: number
   completed: boolean
@@ -80,8 +89,24 @@ type Friend = {
   color: string
 }
 
+type WorldUser = {
+  id: string
+  username: string
+  money: number
+  createdAt: string
+  gardenItems?: GardenItem[]
+}
+
+type VisitedGarden = {
+  userId: string
+  username: string
+  gardenItems: GardenItem[]
+}
+
+
+
 // Image mapping for shop items
-const imageMap: { [key: string]: StaticImageData } = {
+const imageMap: { [key: string]: StaticImageData | string } = {
   "ROSES": FlowerRedPng,
   "ORCHIDS": FlowerBluePng,
   "SUNFLOWERS": FlowerYellowPng,
@@ -92,6 +117,8 @@ const imageMap: { [key: string]: StaticImageData } = {
   "SPRUCE TREE": SprucePng,
   "SAKURA TREE": SakuraPng,
   "BONSAI TREE": BonsaiPng,
+  "FOUNTAIN": FountainGif,
+  "WATERFALL": WaterfallGif,
 }
 
 const nearbyFriends = [
@@ -193,6 +220,10 @@ export default function GardenApp() {
   const [signInError, setSignInError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
 
+  // Particle effects state
+  const [particles, setParticles] = useState<Particle[]>([])
+  const [particleIdCounter, setParticleIdCounter] = useState(0)
+
   // Initialize authentication state from localStorage
   useEffect(() => {
     const savedUser = localStorage.getItem("currentUser")
@@ -206,9 +237,15 @@ export default function GardenApp() {
         localStorage.removeItem("currentUser")
       }
     }
+
+    // Load profile picture from localStorage
+    const savedProfilePicture = localStorage.getItem("profilePicture")
+    if (savedProfilePicture) {
+      setProfilePicture(savedProfilePicture)
+    }
   }, [])
 
-  const [currentScreen, setCurrentScreen] = useState<Screen>("shop")
+  const [currentScreen, setCurrentScreen] = useState<Screen>("garden")
   const [searchQuery, setSearchQuery] = useState("")
 
   // Database-loaded state (temporarily using hardcoded data)
@@ -217,8 +254,8 @@ export default function GardenApp() {
     { id: "2", name: "ORCHIDS", price: 175, emoji: "🌺", icon: FlowerBluePng, color: "text-purple-500" },
     { id: "3", name: "SUNFLOWERS", price: 125, emoji: "🌻", icon: FlowerYellowPng, color: "text-yellow-500" },
     { id: "4", name: "POPPIES", price: 100, emoji: "🌸", icon: FlowerPinkPng, color: "text-red-500" },
-    { id: "5", name: "FOUNTAIN", price: 500, emoji: "⛲", color: "text-blue-500" },
-    { id: "6", name: "WATERFALL", price: 750, emoji: "🏔️", color: "text-gray-600" },
+    { id: "5", name: "FOUNTAIN", price: 500, emoji: "⛲", icon: FountainGif, color: "text-blue-500" },
+    { id: "6", name: "WATERFALL", price: 750, emoji: "🌊", icon: WaterfallGif, color: "text-blue-600" },
     { id: "7", name: "XMAS TREE", price: 200, emoji: "🎄", icon: XmasPng, color: "text-green-600" },
     { id: "8", name: "PALM TREE", price: 300, emoji: "🌴", icon: PalmPng, color: "text-green-500" },
     { id: "9", name: "WELL", price: 400, emoji: "🪣", icon: WellPng, color: "text-brown-600" },
@@ -227,81 +264,132 @@ export default function GardenApp() {
     { id: "12", name: "BONSAI TREE", price: 450, emoji: "🌳", icon: BonsaiPng, color: "text-green-600" },
   ])
   const [money, setMoney] = useState(1250)
-  const [tasks, setTasks] = useState<Task[]>([
-    {
-      id: "1",
-      name: "RECYCLE 10 ITEMS",
-      progress: 8,
-      target: 10,
-      icon: RecyclePng,
-      color: "text-green-600",
-      reward: 50,
-      completed: false,
-    },
-    {
-      id: "2",
-      name: "CYCLE/NINJA TO WORK",
-      progress: 150,
-      target: 150,
-      icon: CyclePng,
-      color: "text-blue-600",
-      reward: 75,
-      completed: false,
-    },
-    {
-      id: "3",
-      name: "TAKE PUBLIC TRANSPORT",
-      progress: 75,
-      target: 100,
-      icon: TrainPng,
-      color: "text-purple-600",
-      reward: 40,
-      completed: false,
-    },
-    {
-      id: "4",
-      name: "EAT SEASONAL PRODUCE",
-      progress: 200,
-      target: 200,
-      icon: SeasonalProdPng,
-      color: "text-orange-600",
-      reward: 60,
-      completed: false,
-    },
-  ])
+  const [tasks, setTasks] = useState<Task[]>([])
   const [inventoryItems, setInventoryItems] = useState([
     { id: "1", name: "ROSES", quantity: 5, emoji: "🌹", icon: FlowerRedPng, color: "text-pink-500" },
     { id: "2", name: "ORCHIDS", quantity: 3, emoji: "🌺", icon: FlowerBluePng, color: "text-purple-500" },
     { id: "3", name: "SUNFLOWERS", quantity: 8, emoji: "🌻", icon: FlowerYellowPng, color: "text-yellow-500" },
     { id: "4", name: "POPPIES", quantity: 12, emoji: "🌸", icon: FlowerPinkPng, color: "text-red-500" },
-    { id: "5", name: "FOUNTAIN", quantity: 1, emoji: "⛲", color: "text-blue-500" },
-    { id: "6", name: "WATERFALL", quantity: 0, emoji: "🏔️", color: "text-gray-600" },
+    { id: "5", name: "FOUNTAIN", quantity: 1, emoji: "⛲", icon: FountainGif, color: "text-blue-500" },
+    { id: "6", name: "WATERFALL", quantity: 0, emoji: "🌊", icon: WaterfallGif, color: "text-blue-600" },
     { id: "7", name: "XMAS TREE", quantity: 2, emoji: "🎄", icon: XmasPng, color: "text-green-600" },
     { id: "8", name: "PALM TREE", quantity: 1, emoji: "🌴", icon: PalmPng, color: "text-green-500" },
     { id: "9", name: "WELL", quantity: 1, emoji: "🪣", icon: WellPng, color: "text-brown-600" },
-    { id: "10", name: "SPRUCE TREE", quantity: 4, emoji: "🌲", icon: SprucePng, color: "text-green-700" },
-    { id: "11", name: "SAKURA TREE", quantity: 2, emoji: "🌸", icon: SakuraPng, color: "text-pink-400" },
-    { id: "12", name: "BONSAI TREE", quantity: 1, emoji: "🌳", icon: BonsaiPng, color: "text-green-600" },
-  ])
+    { id: "10", name: "SPRUCE TREE", quantity: 4, emoji: "🌲", color: "text-green-700" },
+    { id: "11", name: "SAKURA TREE", quantity: 2, emoji: "🌸", color: "text-pink-400" },
+    { id: "12", name: "BONSAI TREE", quantity: 1, emoji: "🌳", color: "text-green-600" },
+  ] as Array<{ id: string; name: string; quantity: number; emoji: string; icon: StaticImageData | string | undefined; color: string }>)
   const [gardenItems, setGardenItems] = useState<GardenItem[]>([
     { id: "1", name: "XMAS TREE", emoji: "🎄", icon: XmasPng, color: "text-green-600", x: 20, y: 20 },
     { id: "2", name: "SPRUCE TREE", emoji: "🌲", icon: SprucePng, color: "text-green-700", x: 20, y: 200 },
     { id: "3", name: "SAKURA TREE", emoji: "🌸", icon: SakuraPng, color: "text-pink-400", x: 120, y: 180 },
-    { id: "4", name: "WATERFALL", emoji: "🏔️", color: "text-gray-600", x: 180, y: 160 },
+    { id: "4", name: "WATERFALL", emoji: "🌊", icon: WaterfallGif, color: "text-blue-600", x: 180, y: 160 },
     { id: "5", name: "BONSAI TREE", emoji: "🌳", icon: BonsaiPng, color: "text-green-600", x: 240, y: 180 },
     { id: "6", name: "XMAS TREE", emoji: "🎄", icon: XmasPng, color: "text-green-600", x: 120, y: 240 },
   ])
+  const [selectedItem, setSelectedItem] = useState<GardenItem | null>(null)
+  const [isDragging, setIsDragging] = useState(false)
+  const [dragPreview, setDragPreview] = useState<{
+    show: boolean
+    x: number
+    y: number
+    item: any
+  } | null>(null)
+  const [touchDragData, setTouchDragData] = useState<{
+    data: DragData
+    startX: number
+    startY: number
+    currentX?: number
+    currentY?: number
+    element: HTMLElement
+  } | null>(null)
   const [friends, setFriends] = useState<Friend[]>([
     { name: "DAAKSH", emoji: "🦆", color: "text-yellow-600" },
-    { name: "CAN", emoji: "🚢", color: "text-blue-600" },
-    { name: "EMMA", emoji: "🍷", color: "text-red-600" },
-    { name: "KEYA", emoji: "🍷", color: "text-red-500" },
+    { name: "EMMA", emoji: "🦋", color: "text-pink-400" },
+    { name: "JIGYA", emoji: "🦊", color: "text-orange-500" },
+    { name: "KEYA", emoji: "🦁", color: "text-yellow-700" },
+    { name: "MAYA", emoji: "🐨", color: "text-gray-600" },
+    { name: "RAHUL", emoji: "🐯", color: "text-orange-600" },
+    { name: "SAMARTH", emoji: "🐻", color: "text-brown-600" },
+    { name: "CAN", emoji: "🦒", color: "text-yellow-800" },
+    { name: "ANGELINA", emoji: "🦄", color: "text-purple-400" },
   ])
+  const [isTouching, setIsTouching] = useState(false)
+
+  // World page state
+  const [worldUsers, setWorldUsers] = useState<WorldUser[]>([])
+  const [visitedGarden, setVisitedGarden] = useState<VisitedGarden | null>(null)
+  const [isLoadingWorld, setIsLoadingWorld] = useState(false)
+  const [worldError, setWorldError] = useState<string | null>(null)
+  const [hasLoadedWorld, setHasLoadedWorld] = useState(false)
+
+  // Add friends state
+  const [searchResults, setSearchResults] = useState<WorldUser[]>([])
+  const [isSearching, setIsSearching] = useState(false)
+  const [friendSearchQuery, setFriendSearchQuery] = useState("")
+
+  // Leaderboard states
+  const [leaderboardData, setLeaderboardData] = useState<any[]>([])
+  const [friendsLeaderboardData, setFriendsLeaderboardData] = useState<any[]>([])
+  const [isLoadingLeaderboard, setIsLoadingLeaderboard] = useState(false)
+  const [leaderboardError, setLeaderboardError] = useState<string | null>(null)
+  const [currentLeaderboardView, setCurrentLeaderboardView] = useState<"global" | "friends">("friends")
+  const [lastLeaderboardRefresh, setLastLeaderboardRefresh] = useState<Date | null>(null)
 
   // UI state
   const [purchasedItems, setPurchasedItems] = useState<Set<string>>(new Set())
   const [moneyAnimation, setMoneyAnimation] = useState<{ show: boolean; amount: number }>({ show: false, amount: 0 })
   const [droppingItems, setDroppingItems] = useState<Set<string>>(new Set())
+
+
+
+  // Profile picture state
+  const [profilePicture, setProfilePicture] = useState<string>("😊")
+  const [isProfileEditing, setIsProfileEditing] = useState(false)
+
+
+
+  // Function to update profile picture
+  const updateProfilePicture = (emoji: string) => {
+    setProfilePicture(emoji)
+    setIsProfileEditing(false)
+  }
+
+  // Helper function to render images (handles both StaticImageData and string paths)
+  const renderImage = (icon: StaticImageData | string | undefined, alt: string, width: number, height: number, className?: string) => {
+    if (!icon) return null
+    
+    if (typeof icon === 'string') {
+      // Handle GIF files and other string paths
+      return (
+        <img 
+          src={icon} 
+          alt={alt} 
+          width={width} 
+          height={height} 
+          className={className}
+        />
+      )
+    } else {
+      // Handle StaticImageData (PNG files)
+      return (
+        <Image 
+          src={icon} 
+          alt={alt} 
+          width={width} 
+          height={height} 
+          className={className}
+        />
+      )
+    }
+  }
+
+  // Function to handle saving profile changes
+  const handleSaveProfile = () => {
+    // TODO: Save profile changes to database when implemented
+    // For now, just exit edit mode
+    setIsProfileEditing(false)
+  }
 
   // Load shop items on component mount
   useEffect(() => {
@@ -314,6 +402,80 @@ export default function GardenApp() {
       loadUserData()
     }
   }, [currentUser])
+
+  // Load leaderboard data when navigating to leaderboard
+  useEffect(() => {
+    if (currentScreen === "leaderboard" && currentUser) {
+      loadLeaderboardData()
+    }
+  }, [currentScreen, currentUser])
+
+  // Refresh leaderboard when navigating to leaderboard screen
+  useEffect(() => {
+    if (currentScreen === "leaderboard" && currentUser) {
+      // Immediate refresh when navigating to leaderboard
+      loadLeaderboardData()
+      
+      // Also refresh in background to ensure data is current
+      refreshLeaderboardInBackground()
+    }
+  }, [currentScreen, currentUser])
+
+  // Auto-refresh leaderboard every 30 seconds when on leaderboard screen
+  useEffect(() => {
+    if (currentScreen === "leaderboard" && currentUser) {
+      const interval = setInterval(() => {
+        loadLeaderboardData()
+      }, 30000) // Refresh every 30 seconds
+      
+      return () => clearInterval(interval)
+    }
+  }, [currentScreen, currentUser])
+
+
+
+  // Helper function to refresh leaderboard if on leaderboard screen
+  const refreshLeaderboardIfNeeded = () => {
+    if (currentScreen === "leaderboard" && currentUser) {
+      loadLeaderboardData()
+    }
+  }
+
+  // Function to refresh leaderboard data in background
+  const refreshLeaderboardInBackground = async () => {
+    if (currentUser) {
+      try {
+
+        
+        // Load global leaderboard
+        const globalResult = await getLeaderboardDataAction()
+        if (globalResult.status === "success" && globalResult.data) {
+
+          setLeaderboardData(globalResult.data)
+        } else {
+          console.error('Failed to get global leaderboard:', globalResult)
+        }
+        
+        // Load friends leaderboard
+        const friendUsernames = friends.map(f => f.name)
+        const friendsResult = await getFriendsLeaderboardAction(currentUser.id, friendUsernames)
+        if (friendsResult.status === "success" && friendsResult.data) {
+
+          setFriendsLeaderboardData(friendsResult.data)
+        } else {
+          console.error('Failed to get friends leaderboard:', friendsResult)
+        }
+        
+        // Set refresh timestamp
+        setLastLeaderboardRefresh(new Date())
+
+      } catch (error) {
+        console.error("Background leaderboard refresh failed:", error)
+      }
+    } else {
+      
+    }
+  }
 
   const loadShopItems = async () => {
     try {
@@ -366,6 +528,15 @@ export default function GardenApp() {
           icon: getTaskIcon(task.name)
         }))
         setTasks(tasksWithIcons)
+        
+        // Ensure user has exactly 4 tasks
+        await ensureUserHasFourTasks(tasksResult.data)
+        
+        // Refresh leaderboard if on leaderboard screen
+        refreshLeaderboardIfNeeded()
+        
+        // Also refresh leaderboard data in background to keep it current
+        refreshLeaderboardInBackground()
       } else {
         // If no tasks exist, create default tasks
         await createDefaultTasks()
@@ -382,6 +553,9 @@ export default function GardenApp() {
 
       // Set money from user data
       setMoney(currentUser.money)
+      
+      // Refresh leaderboard data to ensure it's current
+      refreshLeaderboardInBackground()
     } catch (error) {
       console.error("Failed to load user data:", error)
     }
@@ -399,7 +573,9 @@ export default function GardenApp() {
         { name: "WELL", quantity: 1, emoji: "🪣", color: "text-brown-600" },
         { name: "SPRUCE TREE", quantity: 4, emoji: "🌲", color: "text-green-700" },
         { name: "SAKURA TREE", quantity: 2, emoji: "🌸", color: "text-pink-400" },
-        { name: "BONSAI TREE", quantity: 1, emoji: "🌳", color: "text-green-600" }
+        { name: "BONSAI TREE", quantity: 1, emoji: "🌳", color: "text-green-600" },
+        { name: "FOUNTAIN", quantity: 1, emoji: "⛲", color: "text-blue-500" },
+        { name: "WATERFALL", quantity: 1, emoji: "🌊", color: "text-blue-600" }
       ]
 
       for (const item of defaultItems) {
@@ -418,7 +594,7 @@ export default function GardenApp() {
         id: Date.now().toString() + Math.random(),
         ...item,
         icon: imageMap[item.name] || undefined
-      }))
+      })) as Array<{ id: string; name: string; quantity: number; emoji: string; icon: StaticImageData | string | undefined; color: string }>
       setInventoryItems(itemsWithIcons)
     } catch (error) {
       console.error("Failed to create default inventory:", error)
@@ -427,43 +603,16 @@ export default function GardenApp() {
 
   const createDefaultTasks = async () => {
     try {
-      const defaultTasks = [
-        {
-          name: "RECYCLE 10 ITEMS",
-          progress: 8,
-          target: 10,
-          color: "text-green-600",
-          reward: 50
-        },
-        {
-          name: "CYCLE/NINJA TO WORK",
-          progress: 150,
-          target: 150,
-          color: "text-blue-600",
-          reward: 75
-        },
-        {
-          name: "TAKE PUBLIC TRANSPORT",
-          progress: 75,
-          target: 100,
-          color: "text-purple-600",
-          reward: 40
-        },
-        {
-          name: "EAT SEASONAL PRODUCE",
-          progress: 200,
-          target: 200,
-          color: "text-orange-600",
-          reward: 60
-        }
-      ]
-
-      for (const task of defaultTasks) {
+      // Get 4 random tasks from the task pool
+      const randomTasks = getRandomTasks(4)
+      
+      for (const task of randomTasks) {
         await createTaskAction({
           userId: currentUser.id,
           name: task.name,
-          progress: task.progress,
+          progress: 0,
           target: task.target,
+          emoji: task.emoji,
           color: task.color,
           reward: task.reward,
           completed: false
@@ -471,15 +620,74 @@ export default function GardenApp() {
       }
 
       // Update local state
-      const tasksWithIcons = defaultTasks.map(task => ({
+      const tasksWithIcons = randomTasks.map(task => ({
         id: Date.now().toString() + Math.random(),
         ...task,
+        progress: 0,
         completed: false,
         icon: getTaskIcon(task.name)
       }))
       setTasks(tasksWithIcons)
+      
+      // Refresh leaderboard if on leaderboard screen
+      refreshLeaderboardIfNeeded()
+      
+      // Also refresh leaderboard data in background to keep it current
+      refreshLeaderboardInBackground()
     } catch (error) {
       console.error("Failed to create default tasks:", error)
+    }
+  }
+
+  const ensureUserHasFourTasks = async (existingTasks: any[]) => {
+    try {
+      const currentTaskCount = existingTasks.length
+      
+      if (currentTaskCount < 4) {
+        // Need to add more tasks
+        const tasksToAdd = 4 - currentTaskCount
+        const currentTaskNames = existingTasks.map((task: any) => task.name)
+        
+        // Get random tasks excluding current ones
+        const newTasks = getRandomTasks(tasksToAdd, currentTaskNames)
+        
+        for (const task of newTasks) {
+          const newTaskResult = await createTaskAction({
+            userId: currentUser.id,
+            name: task.name,
+            progress: 0,
+            target: task.target,
+            emoji: task.emoji,
+            color: task.color,
+            reward: task.reward,
+            completed: false
+          })
+          
+          if (newTaskResult.status === "success" && newTaskResult.data) {
+            // Add new task to local state
+            const newTask = {
+              id: newTaskResult.data.id,
+              name: task.name,
+              progress: 0,
+              target: task.target,
+              emoji: task.emoji,
+              color: task.color,
+              reward: task.reward,
+              completed: false,
+              icon: getTaskIcon(task.name)
+            }
+            setTasks((prev: any) => [...prev, newTask])
+          }
+        }
+        
+        // Refresh leaderboard if on leaderboard screen
+        refreshLeaderboardIfNeeded()
+        
+        // Also refresh leaderboard data in background to keep it current
+        refreshLeaderboardInBackground()
+      }
+    } catch (error) {
+      console.error("Failed to ensure user has four tasks:", error)
     }
   }
 
@@ -510,11 +718,134 @@ export default function GardenApp() {
 
   const getTaskIcon = (taskName: string): StaticImageData | undefined => {
     switch (taskName) {
-      case "RECYCLE 10 ITEMS": return RecyclePng
-      case "CYCLE/NINJA TO WORK": return CyclePng
+      case "RECYCLE ITEMS": return RecyclePng
+      case "BIKE TO WORK/SCHOOL": return CyclePng
       case "TAKE PUBLIC TRANSPORT": return TrainPng
       case "EAT SEASONAL PRODUCE": return SeasonalProdPng
       default: return undefined
+    }
+  }
+
+  // World page functions
+  const loadWorldUsers = async () => {
+    if (isLoadingWorld || hasLoadedWorld) return // Prevent multiple simultaneous loads
+    
+    setIsLoadingWorld(true)
+    setWorldError(null)
+    try {
+      const result = await getUsersWithGardenItemsAction()
+      if (result.status === "success" && result.data) {
+        // Filter out current user and map to include icons
+        const filteredUsers = result.data
+          .filter((user: any) => user.id !== currentUser?.id)
+          .map((user: any) => ({
+            ...user,
+            gardenItems: user.gardenItems?.map((item: any) => ({
+              ...item,
+              icon: imageMap[item.name] || undefined
+            })) || []
+          }))
+        setWorldUsers(filteredUsers)
+        setHasLoadedWorld(true)
+      } else {
+        setWorldError(result.message || "Failed to load users")
+      }
+    } catch (error) {
+      console.error("Failed to load world users:", error)
+      setWorldError("Failed to load users. Please try again.")
+    } finally {
+      setIsLoadingWorld(false)
+    }
+  }
+
+  const visitGarden = async (userId: string, username: string) => {
+    try {
+      const gardenResult = await getGardenItemsByUserIdAction(userId)
+      if (gardenResult.status === "success" && gardenResult.data) {
+        const gardenItemsWithIcons = gardenResult.data.map((item: any) => ({
+          ...item,
+          icon: imageMap[item.name] || undefined
+        }))
+        setVisitedGarden({
+          userId,
+          username,
+          gardenItems: gardenItemsWithIcons
+        })
+      }
+    } catch (error) {
+      console.error("Failed to visit garden:", error)
+    }
+  }
+
+  const closeVisitedGarden = () => {
+    setVisitedGarden(null)
+  }
+
+  const resetWorldState = () => {
+    setWorldUsers([])
+    setVisitedGarden(null)
+    setHasLoadedWorld(false)
+    setWorldError(null)
+  }
+
+  // Add friends functions
+  const searchForUsers = async (query: string) => {
+    if (!query.trim() || !currentUser) return
+    
+    setIsSearching(true)
+    try {
+      const result = await searchUsersByUsernameAction(query, currentUser.id)
+      if (result.status === "success" && result.data) {
+        setSearchResults(result.data)
+      }
+    } catch (error) {
+      console.error("Failed to search users:", error)
+    } finally {
+      setIsSearching(false)
+    }
+  }
+
+  const addUserAsFriend = async (userId: string, username: string) => {
+    if (!currentUser) return
+    
+    try {
+      // Check if already friends
+      const existingFriend = friends.find(f => f.name === username)
+      if (existingFriend) {
+        alert("Already friends with this user!")
+        return
+      }
+
+      // Create friend with random emoji and color
+      const emojis = ["🌟", "🎉", "🎨", "🎭", "🎪", "🎯", "🎲", "🎸", "🎹", "🎺"]
+      const colors = ["text-blue-600", "text-green-600", "text-purple-600", "text-pink-600", "text-yellow-600", "text-red-600"]
+      const randomEmoji = emojis[Math.floor(Math.random() * emojis.length)]
+      const randomColor = colors[Math.floor(Math.random() * colors.length)]
+
+      const result = await createFriendAction({
+        userId: currentUser.id,
+        friendName: username,
+        emoji: randomEmoji,
+        color: randomColor
+      })
+
+      if (result.status === "success") {
+        // Add to local friends list
+        const newFriend = {
+          name: username,
+          emoji: randomEmoji,
+          color: randomColor
+        }
+        setFriends(prev => [...prev, newFriend])
+        alert(`Added ${username} as a friend!`)
+        
+        // Clear search
+        setSearchResults([])
+        setFriendSearchQuery("")
+      }
+    } catch (error) {
+      console.error("Failed to add friend:", error)
+      alert("Failed to add friend. Please try again.")
     }
   }
 
@@ -586,10 +917,13 @@ export default function GardenApp() {
     const task = tasks.find((t) => t.id === taskId)
     if (task && task.progress >= task.target && !task.completed) {
       try {
+
+        
         // Update task in database
         await completeTaskAction(taskId)
         
-        // Update local state
+        
+        // Update local state - mark as completed
         setTasks((prev: any) => prev.map((t: any) => (t.id === taskId ? { ...t, completed: true } : t)))
         
         // Update money in database and local state
@@ -599,6 +933,70 @@ export default function GardenApp() {
         
         // Update current user
         setCurrentUser((prev: any) => prev ? { ...prev, money: newMoney } : null)
+        
+        
+        // Wait a moment for database to sync, then refresh leaderboard
+        setTimeout(async () => {
+          try {
+
+            // Refresh leaderboard data if on leaderboard screen
+            refreshLeaderboardIfNeeded()
+            
+            // Also refresh leaderboard data in background to keep it current
+            await refreshLeaderboardInBackground()
+            
+            
+            // Force immediate leaderboard refresh to ensure data is current
+            if (currentScreen === "leaderboard") {
+              
+              await loadLeaderboardData()
+            }
+            
+
+          } catch (error) {
+            console.error('Failed to refresh leaderboard:', error)
+          }
+        }, 500) // Wait 500ms for database to sync
+        
+        // Reset completed task after a longer delay to show completion animation
+        setTimeout(async () => {
+          try {
+
+            // Reset the completed task to start over
+            await resetCompletedTaskAction(taskId)
+            
+            // Update local state - reset progress and mark as not completed
+            setTasks((prev: any) => prev.map((t: any) => 
+              t.id === taskId ? { ...t, progress: 0, completed: false } : t
+            ))
+            
+            // Wait a moment for database to sync, then refresh leaderboard again
+            setTimeout(async () => {
+              try {
+
+                // Refresh leaderboard after task reset
+                refreshLeaderboardIfNeeded()
+                
+                // Also refresh leaderboard data in background to keep it current
+                await refreshLeaderboardInBackground()
+                
+                
+                // Force immediate leaderboard refresh to ensure data is current
+                if (currentScreen === "leaderboard") {
+                  
+                  await loadLeaderboardData()
+                }
+                
+
+              } catch (error) {
+                console.error('Failed to refresh leaderboard after task reset:', error)
+              }
+            }, 500)
+          } catch (error) {
+            console.error("Failed to reset completed task:", error)
+          }
+        }, 2000) // 2 second delay to show completion animation
+        
       } catch (error) {
         console.error("Failed to complete task:", error)
       }
@@ -620,6 +1018,12 @@ export default function GardenApp() {
             t.id === taskId ? { ...t, progress: newProgress } : t
           )
         )
+        
+        // Refresh leaderboard data if on leaderboard screen
+        refreshLeaderboardIfNeeded()
+        
+        // Also refresh leaderboard data in background to keep it current
+        refreshLeaderboardInBackground()
       } catch (error) {
         console.error("Failed to update task progress:", error)
       }
@@ -702,6 +1106,31 @@ export default function GardenApp() {
     e.preventDefault()
   }
 
+  // Handle garden item drop from canvas
+  const handleGardenItemDrop = async (item: GardenItem, x: number, y: number) => {
+    try {
+      // Update position in database
+      await updateGardenItemPositionAction(item.id, x, y)
+      
+      // Update local state
+      setGardenItems((prev: any) =>
+        prev.map((prevItem: any) =>
+          prevItem.id === item.id
+            ? { ...prevItem, x, y }
+            : prevItem
+        )
+      )
+      
+      // Spawn particles when item is moved
+      spawnItemParticles(item, 'place')
+      
+      // Clear selection
+      setSelectedItem(null)
+    } catch (error) {
+      console.error("Failed to move garden item:", error)
+    }
+  }
+
   const handleDrop = async (e: React.DragEvent) => {
     e.preventDefault()
     const rect = e.currentTarget.getBoundingClientRect()
@@ -741,6 +1170,10 @@ export default function GardenApp() {
           // Update local state
           setGardenItems((prev: any) => [...prev, newItem])
           setDroppingItems((prev: any) => new Set([...prev, newItem.id]))
+          
+          // Spawn particles when item is placed
+          spawnItemParticles(newItem, 'place')
+          
           setTimeout(() => {
             setDroppingItems((prev: any) => {
               const next = new Set<string>(prev)
@@ -847,16 +1280,218 @@ export default function GardenApp() {
    }
 
   const handleTouchStart = (e: React.TouchEvent, data: DragData) => {
+    e.preventDefault()
     const touch = e.touches[0]
-    // Touch handling logic remains the same
+    
+    // Store touch data for mobile drag and drop
+    setTouchDragData({
+      data: { type: "inventory", item: data.item },
+      startX: touch.clientX,
+      startY: touch.clientY,
+      currentX: touch.clientX,
+      currentY: touch.clientY,
+      element: e.currentTarget as HTMLElement
+    })
+    
+    // Add visual feedback
+    setIsTouching(true)
+    const element = e.currentTarget as HTMLElement
+    element.style.transform = 'scale(1.1)'
+    element.style.zIndex = '50'
   }
 
   const handleTouchMove = (e: React.TouchEvent) => {
-    // Touch handling logic remains the same
+    if (!touchDragData) return
+    
+    e.preventDefault()
+    const touch = e.touches[0]
+    
+    // Update touch position
+    setTouchDragData(prev => prev ? {
+      ...prev,
+      currentX: touch.clientX,
+      currentY: touch.clientY
+    } : null)
+    
+    // Show drag preview
+    if (touchDragData.data.type === "inventory") {
+      const gardenArea = document.querySelector('[data-garden-area]')
+      if (gardenArea) {
+        const rect = gardenArea.getBoundingClientRect()
+        const x = touch.clientX - rect.left - 16
+        const y = touch.clientY - rect.top - 16
+        
+        setDragPreview({
+          show: true,
+          x,
+          y,
+          item: touchDragData.data.item
+        })
+      }
+    } else if (touchDragData.data.type === "garden") {
+      const gardenArea = document.querySelector('[data-garden-area]')
+      if (gardenArea) {
+        const rect = gardenArea.getBoundingClientRect()
+        const x = touch.clientX - rect.left - 16
+        const y = touch.clientY - rect.top - 16
+        
+        setDragPreview({
+          show: true,
+          x,
+          y,
+          item: touchDragData.data.item
+        })
+      }
+    }
   }
 
-  const handleTouchEnd = (e: React.TouchEvent) => {
-    // Touch handling logic remains the same
+  const handleTouchEnd = async (e: React.TouchEvent) => {
+    if (!touchDragData) return
+    
+    e.preventDefault()
+    const touch = e.changedTouches[0]
+    
+    // Find the drop target
+    const dropTarget = document.elementFromPoint(touch.clientX, touch.clientY)
+    
+    if (dropTarget) {
+      // Check if dropping on garden area
+      const gardenArea = dropTarget.closest('[data-garden-area]')
+      if (gardenArea) {
+        const rect = gardenArea.getBoundingClientRect()
+        const x = touch.clientX - rect.left - 16
+        const y = touch.clientY - rect.top - 16
+        const itemSize = 32
+        const maxX = Math.max(0, rect.width - itemSize)
+        const maxY = Math.max(0, rect.height - itemSize)
+        
+        await handleTouchDrop(touchDragData.data, x, y, maxX, maxY)
+      }
+      
+      // Check if dropping on inventory area
+      const inventoryArea = dropTarget.closest('[data-inventory-area]')
+      if (inventoryArea && touchDragData.data.type === "garden") {
+        await handleInventoryTouchDrop(touchDragData.data)
+      }
+    }
+    
+    // Clear touch data and reset visual feedback
+    setTouchDragData(null)
+    setIsTouching(false)
+    setDragPreview(null)
+    
+    // Reset element styling
+    if (touchDragData?.element) {
+      touchDragData.element.style.transform = ''
+      touchDragData.element.style.zIndex = ''
+    }
+  }
+
+  // Helper function for touch drop on garden
+  const handleTouchDrop = async (data: DragData, x: number, y: number, maxX: number, maxY: number) => {
+    try {
+      if (data.type === "inventory" && data.item.quantity > 0) {
+        // Add item from inventory to garden
+        const newItem: GardenItem = {
+          id: Date.now().toString(),
+          name: data.item.name,
+          emoji: data.item.emoji,
+          icon: data.item.icon,
+          color: data.item.color,
+          x: Math.max(0, Math.min(x, maxX)),
+          y: Math.max(0, Math.min(y, maxY)),
+        }
+
+        try {
+          // Save to database
+          await createGardenItemAction({
+            userId: currentUser.id,
+            name: newItem.name,
+            emoji: newItem.emoji,
+            icon: newItem.icon ? newItem.name : undefined,
+            color: newItem.color,
+            x: newItem.x,
+            y: newItem.y
+          })
+
+          // Update local state
+          setGardenItems((prev: any) => [...prev, newItem])
+          setDroppingItems((prev: any) => new Set([...prev, newItem.id]))
+          
+          // Spawn particles when item is placed
+          spawnItemParticles(newItem, 'place')
+          
+          setTimeout(() => {
+            setDroppingItems((prev: any) => {
+              const next = new Set<string>(prev)
+              next.delete(newItem.id)
+              return next
+            })
+          }, 600)
+
+          // Decrease inventory quantity in database and local state
+          await updateInventoryQuantityAction(data.item.id, data.item.quantity - 1)
+          setInventoryItems((prev: any) =>
+            prev.map((item: any) => (item.id === data.item.id ? { ...item, quantity: item.quantity - 1 } : item))
+          )
+        } catch (error) {
+          console.error("Failed to place garden item:", error)
+        }
+      } else if (data.type === "garden" && data.sourceId) {
+        // Move existing garden item
+        const newX = Math.max(0, Math.min(x, maxX))
+        const newY = Math.max(0, Math.min(y, maxY))
+        
+        try {
+          // Update position in database
+          await updateGardenItemPositionAction(data.sourceId, newX, newY)
+          
+          // Update local state
+          setGardenItems((prev: any) =>
+            prev.map((item: any) =>
+              item.id === data.sourceId
+                ? { ...item, x: newX, y: newY }
+                : item
+            )
+          )
+        } catch (error) {
+          console.error("Failed to update garden item position:", error)
+        }
+      }
+    } catch (error) {
+      console.error("Error handling touch drop:", error)
+    }
+  }
+
+  // Helper function for touch drop on inventory
+  const handleInventoryTouchDrop = async (data: DragData) => {
+    try {
+      if (data.type === "garden" && data.sourceId) {
+        // Remove item from garden and return to inventory
+        const gardenItem = gardenItems.find((item) => item.id === data.sourceId)
+        
+        if (gardenItem) {
+          // Delete from garden
+          await deleteGardenItemAction(data.sourceId)
+          setGardenItems((prev) => prev.filter((item) => item.id !== data.sourceId))
+          
+          // Add to inventory
+          const existingInventoryItem = inventoryItems.find((item) => item.name === gardenItem.name)
+          if (existingInventoryItem) {
+            await updateInventoryQuantityAction(existingInventoryItem.id, existingInventoryItem.quantity + 1)
+            setInventoryItems((prev) =>
+              prev.map((item) =>
+                item.id === existingInventoryItem.id
+                  ? { ...item, quantity: item.quantity + 1 }
+                  : item
+              )
+            )
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Error handling inventory touch drop:", error)
+    }
   }
 
   // Function to handle garden item deletion
@@ -869,15 +1504,73 @@ export default function GardenApp() {
     }
   }
 
+  // Leaderboard functions
+  const loadLeaderboardData = async () => {
+    if (!currentUser) return
+
+    try {
+      setIsLoadingLeaderboard(true)
+      setLeaderboardError(null)
+      
+      // Load global leaderboard
+      const globalResult = await getLeaderboardDataAction()
+      if (globalResult.status === "success" && globalResult.data) {
+
+        setLeaderboardData(globalResult.data)
+      } else {
+
+      }
+      
+      // Load friends leaderboard
+      const friendUsernames = friends.map(f => f.name)
+      const friendsResult = await getFriendsLeaderboardAction(currentUser.id, friendUsernames)
+      if (friendsResult.status === "success" && friendsResult.data) {
+
+        setFriendsLeaderboardData(friendsResult.data)
+      } else {
+
+      }
+      
+      // Set refresh timestamp
+      setLastLeaderboardRefresh(new Date())
+      
+    } catch (error) {
+      console.error("Failed to load leaderboard data:", error)
+      setLeaderboardError("Failed to load leaderboard data")
+    } finally {
+      setIsLoadingLeaderboard(false)
+    }
+  }
+
+  const getCurrentUserRank = () => {
+    if (currentLeaderboardView === "friends") {
+      const userRank = friendsLeaderboardData.findIndex(user => user.userId === currentUser?.id) + 1
+      return userRank > 0 ? userRank : "N/A"
+    } else {
+      const userRank = leaderboardData.findIndex(user => user.userId === currentUser?.id) + 1
+      return userRank > 0 ? userRank : "N/A"
+    }
+  }
+
+  const getCurrentUserStats = () => {
+    if (currentLeaderboardView === "friends") {
+      const userData = friendsLeaderboardData.find(user => user.userId === currentUser?.id)
+      return userData ? { completedTasks: userData.completedTasks, completionRate: userData.completionRate } : { completedTasks: 0, completionRate: 0 }
+    } else {
+      const userData = leaderboardData.find(user => user.userId === currentUser?.id)
+      return userData ? { completedTasks: userData.completedTasks, completionRate: userData.completionRate } : { completedTasks: 0, completionRate: 0 }
+    }
+  }
+
   const BottomNav = () => {
     const isWorldActive = currentScreen === "world" || currentScreen === "add-friends"
     return (
       <div className="px-4 pb-4 pt-2">
-        <div className="relative rounded-2xl border border-gray-200 bg-white/80 backdrop-blur-md shadow-[0_8px_24px_rgba(0,0,0,0.08)]">
+        <div className="relative rounded-2xl border border-border bg-background/80 backdrop-blur-md shadow-[0_8px_24px_rgba(0,0,0,0.08)]">
           <div className="flex">
             <button
               onClick={() => setCurrentScreen("shop")}
-              className="group relative flex-1 items-center justify-center py-3 flex flex-col gap-1"
+              className="group relative flex-1 items-center justify-center py-3 flex flex-col gap-1 hover-scale"
             >
               <ShoppingBag className={`h-5 w-5 transition-all ${currentScreen === "shop" ? "text-green-600 scale-110" : "text-gray-500 group-hover:text-gray-700"}`} />
               <span className={`text-[11px] font-extrabold tracking-wide transition-colors ${currentScreen === "shop" ? "text-green-700" : "text-gray-600"}`}>SHOP</span>
@@ -885,7 +1578,7 @@ export default function GardenApp() {
             </button>
             <button
               onClick={() => setCurrentScreen("garden")}
-              className="group relative flex-1 items-center justify-center py-3 flex flex-col gap-1"
+              className="group relative flex-1 items-center justify-center py-3 flex flex-col gap-1 hover-scale"
             >
               <Sprout className={`h-5 w-5 transition-all ${currentScreen === "garden" ? "text-green-600 scale-110" : "text-gray-500 group-hover:text-gray-700"}`} />
               <span className={`text-[11px] font-extrabold tracking-wide transition-colors ${currentScreen === "garden" ? "text-green-700" : "text-gray-600"}`}>GARDEN</span>
@@ -893,18 +1586,19 @@ export default function GardenApp() {
             </button>
             <button
               onClick={() => setCurrentScreen("world")}
-              className="group relative flex-1 items-center justify-center py-3 flex flex-col gap-1"
+              className="group relative flex-1 items-center justify-center py-3 flex flex-col gap-1 hover-scale"
             >
               <Globe2 className={`h-5 w-5 transition-all ${isWorldActive ? "text-green-600 scale-110" : "text-gray-500 group-hover:text-gray-700"}`} />
               <span className={`text-[11px] font-extrabold tracking-wide transition-colors ${isWorldActive ? "text-green-700" : "text-gray-600"}`}>WORLD</span>
-              <div className={`pointer-events-none absolute -top-0.5 left-1/2 h-1 w-8 -translate-x-1/2 rounded-full transition-opacity ${isWorldActive ? "bg-green-500/90 opacity-100" : "opacity-0"}`} />
+              <div className={`pointer-events-none absolute -top-0.5 left-1/2 h-1 w-8 -translate-x-1/2 rounded-full transition-colors ${isWorldActive ? "bg-green-500/90 opacity-100" : "opacity-0"}`} />
             </button>
             <button
-              onClick={() => window.location.href = "/settings"}
-              className="group relative flex-1 items-center justify-center py-3 flex flex-col gap-1"
+              onClick={() => setCurrentScreen("profile")}
+              className="group relative flex-1 items-center justify-center py-3 flex flex-col gap-1 hover-scale"
             >
-              <Settings className="h-5 w-5 transition-all text-gray-500 group-hover:text-gray-700" />
-              <span className="text-[11px] font-extrabold tracking-wide transition-colors text-gray-600">SETTINGS</span>
+              <User className="h-5 w-5 transition-all text-gray-500 group-hover:text-gray-700" />
+              <span className={`text-[11px] font-extrabold tracking-wide transition-colors ${currentScreen === "profile" ? "text-green-700" : "text-gray-600"}`}>PROFILE</span>
+              <div className={`pointer-events-none absolute -top-0.5 left-1/2 h-1 w-8 -translate-x-1/2 rounded-full transition-opacity ${currentScreen === "profile" ? "bg-green-500/90 opacity-100" : "opacity-0"}`} />
             </button>
           </div>
         </div>
@@ -913,11 +1607,19 @@ export default function GardenApp() {
   }
 
   const ShopScreen = () => (
-    <div className="flex-1 p-4">
-      <div className="flex justify-between items-center mb-4">
-        <div className="w-6 h-6 bg-green-600 rounded-full"></div>
-        <span className="text-sm font-bold">SHOP</span>
+    <div className="flex-1 flex flex-col p-4">
+      <div className="flex justify-between items-center mb-4 flex-shrink-0">
+        <button 
+          onClick={() => setCurrentScreen("garden")}
+          className="text-2xl hover:text-green-600 bg-muted hover:bg-muted/80 rounded-full p-2 hover-lift ripple"
+        >
+          ←
+        </button>
+        <span className="text-sm font-bold text-foreground">SHOP</span>
         <div className="relative">
+          <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center text-white text-xs font-bold">
+            {profilePicture}
+          </div>
           <span className="text-sm font-bold text-green-600">${money}</span>
           {moneyAnimation.show && (
             <div className="absolute -top-6 left-0 text-sm font-bold text-red-500 money-change">
@@ -926,35 +1628,35 @@ export default function GardenApp() {
           )}
         </div>
       </div>
-      <div className="grid grid-cols-3 gap-4">
+      <div className="flex-1 grid grid-cols-2 sm:grid-cols-3 gap-3 content-start overflow-y-auto p-2 min-h-0 max-h-150">
         {shopItems.map((item, index) => (
           <div key={index} className="text-center">
-            <div className={`bg-gray-100 rounded-lg p-4 mb-2 h-20 flex items-center justify-center transition-all duration-300 ${
-              purchasedItems.has(item.name) 
-                ? 'bg-green-200 scale-110 shadow-lg purchase-success' 
-                : 'hover:bg-gray-200'
-            }`}>
+                    <div className={`bg-muted rounded-lg p-3 mb-2 h-16 flex items-center justify-center hover-lift ${
+          purchasedItems.has(item.name) 
+            ? 'bg-green-200 scale-110 shadow-lg purchase-success celebration' 
+            : 'hover:bg-muted/80'
+        }`}>
               {item.icon ? (
-                <Image
-                  src={item.icon}
-                  alt={item.name}
-                  width={40}
-                  height={40}
-                  className={`h-10 w-10 object-contain transition-all duration-300 ${
+                renderImage(
+                  item.icon,
+                  item.name,
+                  40,
+                  40,
+                  `h-10 w-10 object-contain transition-all duration-300 ${
                     purchasedItems.has(item.name) ? 'scale-125' : ''
-                  }`}
-                />
+                  }`
+                )
               ) : (
                 <span className={`text-2xl ${item.color} transition-all duration-300 ${
                   purchasedItems.has(item.name) ? 'scale-125' : ''
                 }`}>{item.emoji}</span>
               )}
             </div>
-            <div className="text-xs font-bold mb-1">{item.name}</div>
-            <div className="text-xs text-gray-600 mb-2">${item.price}</div>
+            <div className="text-xs font-bold mb-1 text-foreground">{item.name}</div>
+            <div className="text-xs text-muted-foreground mb-2">${item.price}</div>
             <Button
               size="sm"
-              className={`text-xs px-2 py-1 w-full transition-all duration-200 ${
+              className={`text-xs px-2 py-1 w-full ripple hover-scale ${
                 money >= item.price
                   ? "bg-green-600 hover:bg-green-700 text-white"
                   : "bg-gray-300 text-gray-500 cursor-not-allowed"
@@ -977,107 +1679,97 @@ export default function GardenApp() {
 
   const GardenScreen = () => (
     <div className="flex-1 flex flex-col">
-      <div className="p-4 pb-2">
+      <div className="p-4 pb-2 flex-shrink-0">
+        <div className="flex justify-between items-center mb-3">
+          <h1 className="text-2xl font-black text-foreground">GARDEN</h1>
+        </div>
+      </div>
+      <div className="p-4 pb-2 flex-shrink-0">
         <div className="flex justify-between items-center mb-4">
-          <div className="w-6 h-6 bg-green-600 rounded-full"></div>
-          <span className="text-sm font-bold text-green-600">Garden</span>
+          <div className="w-6 h-6 bg-green-600 rounded-full flex items-center justify-center text-white text-xs font-bold">
+            {profilePicture}
+          </div>
           <div></div>
         </div>
         <div
-          className="relative bg-green-400 border-2 border-green-600 rounded-lg overflow-hidden"
-          style={{
-            height: "300px",
-            backgroundImage: `
-              radial-gradient(circle at 25% 25%, #22c55e 2px, transparent 2px),
-              radial-gradient(circle at 75% 75%, #16a34a 2px, transparent 2px),
-              radial-gradient(circle at 25% 75%, #15803d 1px, transparent 1px),
-              radial-gradient(circle at 75% 25%, #22c55e 1px, transparent 1px)
-            `,
-            backgroundSize: "16px 16px",
-            backgroundPosition: "0 0, 0 0, 8px 8px, 8px 8px",
-          }}
-          onDragOver={handleDragOver}
-          onDrop={handleDrop}
-          onTouchMove={handleTouchMove}
-          onTouchEnd={handleTouchEnd}
-          data-garden-area
+          className="relative border-2 border-green-600 rounded-lg overflow-hidden flex-shrink-0"
+          style={{ height: "280px" }}
         >
-          <svg
-            className="absolute inset-0 w-full h-full pointer-events-none"
-            viewBox="0 0 100 100"
-            preserveAspectRatio="none"
-          >
-            <path d="M0,45 Q25,35 50,45 T100,40 L100,55 Q75,65 50,55 T0,60 Z" fill="#3b82f6" opacity="0.8" />
-            <path d="M0,45 Q25,35 50,45 T100,40 L100,50 Q75,60 50,50 T0,55 Z" fill="#1d4ed8" opacity="0.6" />
-          </svg>
-
-          <div className="absolute inset-2 text-xs text-green-800 font-bold pointer-events-none z-10">
-            Drag items from inventory below
-          </div>
-          {gardenItems.map((item) => (
-            <div
-              key={item.id}
-              className={`absolute cursor-move hover:scale-110 transition-transform ${
-                droppingItems.has(item.id) ? 'garden-drop' : ''
-              }`}
-              style={{ left: item.x, top: item.y }}
-              draggable
-              onDragStart={(e) => handleDragStart(e, { type: "garden", item, sourceId: item.id })}
-              onTouchStart={(e) => handleTouchStart(e, { type: "garden", item, sourceId: item.id })}
-            >
-              {item.icon ? (
-                <Image src={item.icon} alt={item.name} width={40} height={40} className="h-10 w-10 object-contain drop-shadow-sm" />
-              ) : (
-                <span className={`text-2xl ${item.color} drop-shadow-sm`}>{item.emoji}</span>
-              )}
-            </div>
-          ))}
+          <GardenCanvas
+            gardenItems={gardenItems}
+            onItemClick={(item) => {
+              setSelectedItem(item)
+              spawnItemParticles(item, 'hover')
+            }}
+            onItemDrag={(item, x, y) => {
+              // Update item position while dragging
+              setGardenItems(prev => 
+                prev.map(prevItem => 
+                  prevItem.id === item.id ? { ...prevItem, x, y } : prevItem
+                )
+              )
+            }}
+            onDrop={(x, y) => {
+              // Handle final drop position
+              if (selectedItem) {
+                handleGardenItemDrop(selectedItem, x, y)
+              }
+            }}
+            particles={particles}
+            width={280}
+            height={280}
+            dragPreview={dragPreview}
+          />
         </div>
       </div>
       <div
-        className="bg-gray-50 border-t-2 border-gray-200 p-4 flex-1 border-2 border-dashed border-transparent hover:border-green-300 transition-colors"
+        className="bg-muted/30 border-t-2 border-border p-4 flex-1 border-2 border-dashed border-transparent hover:border-green-300 transition-colors"
         onDragOver={handleDragOver}
         onDrop={handleInventoryDrop}
         data-inventory-area
       >
-        <div className="flex justify-between items-center mb-3">
-          <h2 className="text-lg font-black">INVENTORY</h2>
-          <span className="text-xs text-gray-600">Drag to place • Drop here to return</span>
+        <div className="flex justify-between items-center mb-3 flex-shrink-0">
+          <h2 className="text-lg font-black text-foreground">INVENTORY</h2>
+          <span className="text-xs text-muted-foreground">Drag to place • Drop here to return</span>
         </div>
-        <div className="grid grid-cols-4 gap-3 max-h-[180px] overflow-y-auto">
+        <div className="grid grid-cols-4 gap-2 flex-1 overflow-y-auto p-2">
           {inventoryItems.map((item, index) => (
             <div
               key={item.id}
-              className={`text-center transition-all duration-300 ${
+              className={`text-center transition-all duration-300 touch-draggable inventory-item ${
                 item.quantity > 0 ? "cursor-grab active:cursor-grabbing" : "opacity-50"
               } ${
                 purchasedItems.has(item.name) ? "animate-pulse scale-105" : ""
+              } ${
+                touchDragData?.data.type === "inventory" && touchDragData.data.item.id === item.id ? "ring-2 ring-green-500 ring-opacity-75" : ""
               }`}
               draggable={item.quantity > 0}
               onDragStart={(e) => item.quantity > 0 && handleDragStart(e, { type: "inventory", item })}
               onTouchStart={(e) => item.quantity > 0 && handleTouchStart(e, { type: "inventory", item })}
+              onTouchMove={handleTouchMove}
+              onTouchEnd={handleTouchEnd}
             >
-              <div className={`bg-white rounded-lg p-2 mb-1 h-12 flex items-center justify-center hover:bg-gray-100 transition-all duration-300 border ${
-                purchasedItems.has(item.name) ? "bg-green-100 shadow-lg item-highlight" : ""
+              <div className={`bg-background rounded-lg p-2 mb-1 h-10 flex items-center justify-center hover:bg-muted hover-scale border border-border ${
+                purchasedItems.has(item.name) ? "bg-green-100 shadow-lg item-highlight pulse-glow" : ""
               }`}>
                 {item.icon ? (
-                  <Image
-                    src={item.icon}
-                    alt={item.name}
-                    width={32}
-                    height={32}
-                    className={`h-8 w-8 object-contain transition-all duration-300 ${
+                  renderImage(
+                    item.icon,
+                    item.name,
+                    32,
+                    32,
+                    `h-8 w-8 object-contain transition-all duration-300 ${
                       purchasedItems.has(item.name) ? "scale-110" : ""
-                    }`}
-                  />
+                    }`
+                  )
                 ) : (
                   <span className={`text-lg ${item.color} transition-all duration-300 ${
                     purchasedItems.has(item.name) ? "scale-110" : ""
                   }`}>{item.emoji}</span>
                 )}
               </div>
-              <div className="text-[10px] font-bold mb-1 leading-tight">{item.name}</div>
-              <div className={`text-[10px] ${item.quantity > 0 ? "text-gray-600" : "text-red-500"}`}>
+              <div className="text-[10px] font-bold mb-1 leading-tight text-foreground">{item.name}</div>
+              <div className={`text-[10px] ${item.quantity > 0 ? "text-muted-foreground" : "text-red-500"}`}>
                 {item.quantity}
               </div>
               {purchasedItems.has(item.name) && (
@@ -1092,70 +1784,280 @@ export default function GardenApp() {
     </div>
   )
 
-  const WorldScreen = () => (
-    <div className="flex-1 p-4">
-      <div className="flex justify-between items-center mb-4">
-        <div className="w-6 h-6 bg-green-600 rounded-full"></div>
-        <span className="text-sm font-bold text-green-600">FRIENDS LIST</span>
-        <div></div>
-      </div>
-      <div className="flex gap-2 mb-6">
-        <Button className="bg-green-600 hover:bg-green-700 text-white font-bold px-6">FRIENDS</Button>
-        <Button
-          variant="outline"
-          className="border-2 border-gray-300 font-bold bg-transparent"
-          onClick={() => setCurrentScreen("add-friends")}
-        >
-          ADD FRIENDS
-        </Button>
-      </div>
-      <div className="flex-1 flex flex-col">
-        <div className="space-y-4 mb-6 flex-1 overflow-auto">
-          {friends.map((friend, index) => (
-            <div key={index} className="flex items-center gap-4">
-              <span className={`text-2xl ${friend.color}`}>{friend.emoji}</span>
-              <span className="font-bold text-sm">{friend.name}</span>
-            </div>
-          ))}
+  const WorldScreen = () => {
+    // Load world users when screen is opened, but only once
+    useEffect(() => {
+      if (currentScreen === "world" && !hasLoadedWorld && !isLoadingWorld) {
+        loadWorldUsers()
+      }
+    }, [currentScreen, hasLoadedWorld, isLoadingWorld])
+
+    // Reset world state when leaving the world screen
+    useEffect(() => {
+      if (currentScreen !== "world") {
+        resetWorldState()
+      }
+    }, [currentScreen])
+
+    // Add error handling for loading
+    const handleRetry = () => {
+      loadWorldUsers()
+    }
+
+    // If viewing a specific garden, show the garden view
+    if (visitedGarden) {
+      return (
+        <div className="flex-1 flex flex-col p-4">
+          <div className="flex items-center gap-2 mb-4 flex-shrink-0">
+            <button 
+              onClick={closeVisitedGarden}
+              className="text-2xl hover:text-green-600 bg-gray-100 hover:bg-gray-200 rounded-full p-2 hover-lift ripple"
+            >
+              ←
+            </button>
+            <div className="ml-auto flex items-center gap-3">
+          <div className="w-6 h-6 bg-green-600 rounded-full flex items-center justify-center text-white text-xs font-bold">
+            {profilePicture}
+          </div>
+          <div className="text-lg font-bold">${money}</div>
         </div>
-        <Button className="w-full bg-green-400 hover:bg-green-500 text-black font-bold py-3 rounded-full text-lg">
-          VISIT
-        </Button>
+          </div>
+          <div className="text-center mb-4 flex-shrink-0">
+            <div className="w-20 h-20 bg-green-500 mx-auto mb-2 relative rounded-full flex items-center justify-center">
+              <span className="text-4xl">😊</span>
+            </div>
+            <h2 className="text-lg font-black text-foreground">{visitedGarden.username.toUpperCase()}</h2>
+            <p className="text-xs text-muted-foreground">GARDEN</p>
+          </div>
+          
+          {/* Garden Grid */}
+          <div 
+            className="relative w-full border-2 border-green-600 rounded-lg overflow-hidden flex-1"
+            style={{
+              backgroundColor: "#3cb066",
+              backgroundImage: `
+                radial-gradient(circle at 25% 25%, #22c55e 2px, transparent 2px),
+                radial-gradient(circle at 75% 75%, #16a34a 2px, transparent 2px),
+                radial-gradient(circle at 25% 75%, #15803d 1px, transparent 1px),
+                radial-gradient(circle at 75% 25%, #22c55e 1px, transparent 1px)
+              `,
+              backgroundSize: "16px 16px",
+              backgroundPosition: "0 0, 0 0, 8px 8px, 8px 8px",
+            }}
+          >
+            {/* River overlay */}
+            <svg
+              className="absolute inset-0 w-full h-full pointer-events-none"
+              viewBox="0 0 100 100"
+              preserveAspectRatio="none"
+            >
+              {/* Main river body with flowing effect */}
+              <defs>
+                <linearGradient id="visitedRiverGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.8">
+                    <animate attributeName="offset" values="-1;2" dur="4s" repeatCount="indefinite" />
+                  </stop>
+                  <stop offset="33%" stopColor="#1d4ed8" stopOpacity="0.6">
+                    <animate attributeName="offset" values="-1;2" dur="4s" repeatCount="indefinite" />
+                  </stop>
+                  <stop offset="66%" stopColor="#60a5fa" stopOpacity="0.7">
+                    <animate attributeName="offset" values="-1;2" dur="4s" repeatCount="indefinite" />
+                  </stop>
+                  <stop offset="100%" stopColor="#3b82f6" stopOpacity="0.8">
+                    <animate attributeName="offset" values="-1;2" dur="4s" repeatCount="indefinite" />
+                  </stop>
+                </linearGradient>
+                
+                {/* Second gradient for layered flow effect */}
+                <linearGradient id="visitedRiverGradient2" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="#93c5fd" stopOpacity="0.5">
+                    <animate attributeName="offset" values="-1;2" dur="3s" repeatCount="indefinite" />
+                  </stop>
+                  <stop offset="50%" stopColor="#3b82f6" stopOpacity="0.6">
+                    <animate attributeName="offset" values="-1;2" dur="3s" repeatCount="indefinite" />
+                  </stop>
+                  <stop offset="100%" stopColor="#93c5fd" stopOpacity="0.5">
+                    <animate attributeName="offset" values="-1;2" dur="3s" repeatCount="indefinite" />
+                  </stop>
+                </linearGradient>
+              </defs>
+              
+              {/* Main river path with flowing gradient */}
+              <path d="M0,45 Q25,35 50,45 T100,40 L100,55 Q75,65 50,55 T0,60 Z" fill="url(#visitedRiverGradient)" />
+              
+              {/* Secondary river layer for depth */}
+              <path d="M0,47 Q25,37 50,47 T100,42 L100,57 Q75,67 50,57 T0,62 Z" fill="url(#visitedRiverGradient2)" />
+            </svg>
+
+            {/* Garden items */}
+            {visitedGarden.gardenItems.map((item) => (
+              <div
+                key={item.id}
+                className="absolute cursor-pointer transition-transform hover:scale-110 z-20"
+                style={{
+                  left: `${item.x}px`,
+                  top: `${item.y}px`
+                }}
+              >
+                {item.icon ? (
+                  renderImage(
+                    item.icon,
+                    item.name,
+                    40,
+                    40,
+                    "h-10 w-10 object-contain drop-shadow-sm"
+                  )
+                ) : (
+                  <span className={`text-3xl ${item.color} drop-shadow-sm`}>{item.emoji}</span>
+                )}
+              </div>
+            ))}
+          </div>
+          
+          <div className="mt-4 text-center flex-shrink-0">
+            <p className="text-sm text-muted-foreground">
+              {visitedGarden.gardenItems.length} items in this garden
+            </p>
+          </div>
+        </div>
+      )
+    }
+
+    return (
+      <div className="flex-1 flex flex-col p-4">
+        <div className="flex justify-between items-center mb-4 flex-shrink-0">
+          <button 
+            onClick={() => setCurrentScreen("garden")}
+            className="text-2xl hover:text-green-600 bg-gray-100 hover:bg-gray-200 rounded-full p-2 hover-lift ripple"
+          >
+            ←
+          </button>
+          <span className="text-sm font-bold text-foreground">WORLD</span>
+          <div className="w-6 h-6 bg-green-600 rounded-full flex items-center justify-center text-white text-xs font-bold">
+            {profilePicture}
+          </div>
+        </div>
+        <div className="flex flex-wrap gap-2 mb-4 flex-shrink-0">
+          <Button className="bg-green-600 hover:bg-green-700 text-white font-bold px-4 text-xs">GARDENS</Button>
+          <Button
+            variant="outline"
+            className="border-2 border-gray-300 font-bold bg-transparent text-xs px-3"
+            onClick={() => setCurrentScreen("add-friends")}
+          >
+            ADD FRIENDS
+          </Button>
+          <Button
+            variant="outline"
+            className="border-2 border-gray-300 font-bold bg-transparent text-xs px-3"
+            onClick={() => {
+              setHasLoadedWorld(false)
+              loadWorldUsers()
+            }}
+            disabled={isLoadingWorld}
+          >
+            {isLoadingWorld ? "..." : "🔄"}
+          </Button>
+        </div>
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <div className="space-y-4 mb-6 overflow-y-auto max-h-80">
+            {isLoadingWorld ? (
+                          <div className="text-center py-8">
+              <div className="text-lg font-bold text-foreground">Loading gardens...</div>
+              <div className="text-sm text-muted-foreground mt-2">This may take a moment</div>
+                <Button 
+                  onClick={handleRetry}
+                  className="mt-4 bg-green-600 hover:bg-green-700 text-white text-sm"
+                >
+                  Retry
+                </Button>
+              </div>
+            ) : worldError ? (
+                          <div className="text-center py-8">
+              <div className="text-lg font-bold text-red-600">Error loading gardens</div>
+              <div className="text-sm text-muted-foreground mt-2">{worldError}</div>
+                <Button 
+                  onClick={handleRetry}
+                  className="mt-4 bg-green-600 hover:bg-green-700 text-white text-sm"
+                >
+                  Retry
+                </Button>
+              </div>
+            ) : worldUsers.length === 0 ? (
+                          <div className="text-center py-8">
+              <div className="text-lg font-bold text-foreground">No gardens to visit yet</div>
+              <div className="text-sm text-muted-foreground mt-2">Other users need to create accounts and add items to their gardens</div>
+              </div>
+            ) : (
+              worldUsers.map((user) => (
+                <div 
+                  key={user.id} 
+                  className="flex items-center justify-between p-3 bg-background rounded-lg border-2 border-border hover:border-green-300 transition-colors cursor-pointer card hover-lift"
+                  onClick={() => visitGarden(user.id, user.username)}
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center">
+                      <span className="text-white font-bold text-lg">
+                        😊
+                      </span>
+                    </div>
+                    <div>
+                      <div className="font-bold text-sm text-foreground">{user.username.toUpperCase()}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {user.gardenItems?.length || 0} items in garden
+                      </div>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-xs text-green-600 font-bold">${user.money}</div>
+                    <div className="text-xs text-muted-foreground">VISIT →</div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
       </div>
-    </div>
-  )
+    )
+  }
 
   const TasksScreen = () => (
-    <div className="flex-1 p-4">
-      <div className="flex items-center gap-2 mb-4">
-        <button onClick={() => setCurrentScreen("garden")} className="text-xl">
+    <div className="flex-1 flex flex-col p-4">
+      <div className="flex items-center gap-2 mb-4 flex-shrink-0">
+        <button 
+          onClick={() => setCurrentScreen("garden")} 
+          className="text-2xl hover:text-green-600 bg-gray-100 hover:bg-gray-200 rounded-full p-2 hover-lift ripple"
+        >
           ←
         </button>
-        <div className="ml-auto text-lg font-bold">${money}</div>
-      </div>
-      <div className="text-center mb-6">
-        <div className="w-24 h-24 bg-red-500 mx-auto mb-2 relative">
-          <div className="absolute inset-2 bg-black"></div>
-          <div className="absolute top-4 left-4 w-4 h-4 bg-red-500"></div>
+        <div className="ml-auto flex items-center gap-3">
+          <div className="w-6 h-6 bg-green-600 rounded-full flex items-center justify-center text-white text-xs font-bold">
+            {profilePicture}
+          </div>
+          <div className="text-lg font-bold">${money}</div>
         </div>
-        <h2 className="text-xl font-black">{username.toUpperCase()}</h2>
-        <p className="text-sm text-gray-600">LONDON—BASILDON</p>
       </div>
-      <h3 className="text-lg font-black mb-4">TASK LIST</h3>
-      <div className="space-y-4">
+      <div className="text-center mb-4 flex-shrink-0">
+        <div className="w-20 h-20 bg-green-500 mx-auto mb-2 relative rounded-full flex items-center justify-center">
+          <span className="text-4xl">{profilePicture}</span>
+        </div>
+        <h2 className="text-lg font-black text-foreground">{username.toUpperCase()}</h2>
+        <p className="text-xs text-muted-foreground">LONDON—BASILDON</p>
+      </div>
+      <h3 className="text-base font-black mb-3 flex-shrink-0 text-foreground">TASK LIST</h3>
+      <div className="space-y-3 overflow-y-auto max-h-64">
         {tasks.map((task) => (
-          <div
-            key={task.id}
-            className={`flex items-center gap-4 p-3 rounded-lg ${task.completed ? "bg-green-100" : "bg-gray-50"}`}
-          >
+                      <div
+              key={task.id}
+              className={`flex items-center gap-4 p-3 rounded-lg card ${task.completed ? "bg-green-100" : "bg-muted"}`}
+            >
             {task.icon ? (
-              <Image
-                src={task.icon}
-                alt={task.name}
-                width={32}
-                height={32}
-                className={`h-8 w-8 object-contain ${task.completed ? "opacity-50" : ""}`}
-              />
+              renderImage(
+                task.icon,
+                task.name,
+                32,
+                32,
+                `h-8 w-8 object-contain ${task.completed ? "opacity-50" : ""}`
+              )
             ) : (
               <span className={`text-2xl ${task.color} ${task.completed ? "opacity-50" : ""}`}>{task.emoji}</span>
             )}
@@ -1170,32 +2072,32 @@ export default function GardenApp() {
             </div>
             {!task.completed && task.progress < task.target && (
               <div className="flex gap-1">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="text-xs px-2 py-1 h-6 bg-transparent"
-                  onClick={() => updateTaskProgress(task.id, 1)}
-                >
-                  +1
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="text-xs px-2 py-1 h-6 bg-transparent"
-                  onClick={() => updateTaskProgress(task.id, 5)}
-                >
-                  +5
-                </Button>
+                                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="text-xs px-2 py-1 h-6 bg-transparent hover-scale ripple"
+                    onClick={() => updateTaskProgress(task.id, 1)}
+                  >
+                    +1
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="text-xs px-2 py-1 h-6 bg-transparent hover-scale ripple"
+                    onClick={() => updateTaskProgress(task.id, 5)}
+                  >
+                    +5
+                  </Button>
               </div>
             )}
             {!task.completed && task.progress >= task.target && (
-              <Button
-                size="sm"
-                className="bg-green-600 hover:bg-green-700 text-white font-bold text-xs px-3"
-                onClick={() => completeTask(task.id)}
-              >
-                COMPLETE
-              </Button>
+                              <Button
+                  size="sm"
+                  className="bg-green-600 hover:bg-green-700 text-white font-bold text-xs px-3 hover-scale ripple"
+                  onClick={() => completeTask(task.id)}
+                >
+                  COMPLETE
+                </Button>
             )}
             {task.completed && <div className="text-green-600 font-bold text-xs">✓ DONE</div>}
           </div>
@@ -1205,65 +2107,428 @@ export default function GardenApp() {
   )
 
   const AddFriendsScreen = () => (
-    <div className="flex-1 p-4">
-      <div className="bg-green-100 rounded-lg p-4 mb-6">
-        <div className="flex gap-2 mb-4">
+    <div className="flex-1 flex flex-col p-4">
+      <div className="flex items-center gap-2 mb-4 flex-shrink-0">
+        <button 
+          onClick={() => setCurrentScreen("world")}
+          className="text-2xl hover:text-green-600 bg-gray-100 hover:bg-gray-200 rounded-full p-2 hover-lift ripple"
+        >
+          ←
+        </button>
+        <div className="ml-auto flex items-center gap-3">
+          <div className="w-6 h-6 bg-green-600 rounded-full flex items-center justify-center text-white text-xs font-bold">
+            {profilePicture}
+          </div>
+          <div className="text-lg font-bold">${money}</div>
+        </div>
+      </div>
+      
+      <div className="bg-green-100 rounded-lg p-3 mb-4 flex-shrink-0">
+        <div className="flex flex-col gap-2 mb-3">
           <Input
-            placeholder="TYPE A NAME OR USER CODE"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search for users by username..."
+            value={friendSearchQuery}
+            onChange={(e) => setFriendSearchQuery(e.target.value)}
             className="flex-1 text-xs font-bold"
           />
-          <Button size="sm" className="bg-gray-400 hover:bg-gray-500">
-            🔍
+          <Button 
+            size="sm" 
+            className="bg-green-600 hover:bg-green-700 text-white text-xs"
+            onClick={() => searchForUsers(friendSearchQuery)}
+            disabled={!friendSearchQuery.trim() || isSearching}
+          >
+            {isSearching ? "..." : "🔍"}
           </Button>
         </div>
-        <div className="flex gap-2">
-          <Button className="bg-green-600 hover:bg-green-700 text-white font-bold text-xs px-4">FRIENDS</Button>
-          <Button className="bg-green-600 hover:bg-green-700 text-white font-bold text-xs px-4">ADD FRIENDS</Button>
+        <div className="text-xs text-muted-foreground text-center">
+          Type a username and click search to find users to add as friends
         </div>
       </div>
-      <div className="space-y-4 mb-6">
-        {nearbyFriends.map((friend, index) => (
-          <div key={index} className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <span className={`text-2xl ${friend.color}`}>{friend.emoji}</span>
-              <span className="font-bold text-sm">{friend.name}</span>
+
+      {/* Search Results */}
+      {searchResults.length > 0 && (
+        <div className="space-y-3 mb-4 flex-shrink-0 max-h-40 overflow-y-auto">
+          <div className="text-sm font-bold text-foreground sticky top-0 bg-background py-2">SEARCH RESULTS</div>
+          {searchResults.map((user) => (
+            <div key={user.id} className="flex items-center justify-between p-3 bg-background rounded-lg border-2 border-border card hover-lift">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
+                  <span className="text-white font-bold text-xs">
+                    😊
+                  </span>
+                </div>
+                <div>
+                  <div className="font-bold text-xs text-foreground">{user.username.toUpperCase()}</div>
+                  <div className="text-xs text-muted-foreground">
+                    {user.gardenItems?.length || 0} garden items
+                  </div>
+                </div>
+              </div>
+              <Button
+                size="sm"
+                className="bg-green-600 hover:bg-green-700 text-white text-xs px-2"
+                onClick={() => addUserAsFriend(user.id, user.username)}
+                disabled={friends.some(f => f.name === user.username)}
+              >
+                {friends.some(f => f.name === user.username) ? "FRIENDS" : "ADD"}
+              </Button>
             </div>
-            <button
-              className={`text-xl transition-colors ${
-                friends.some((f) => f.name === friend.name) ? "text-red-500" : "text-gray-400 hover:text-red-400"
-              }`}
-              onClick={() => addFriend(friend)}
-              disabled={friends.some((f) => f.name === friend.name)}
-            >
-              {friends.some((f) => f.name === friend.name) ? "♥" : "♡"}
-            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Current Friends */}
+      <div className="space-y-3 overflow-y-auto max-h-48">
+        <div className="text-sm font-bold text-foreground sticky top-0 bg-background py-2">CURRENT FRIENDS</div>
+        {friends.length === 0 ? (
+          <div className="text-center py-4 text-muted-foreground text-xs">
+            No friends yet. Search for users above to add friends!
           </div>
-        ))}
+        ) : (
+          friends.map((friend, index) => (
+            <div key={index} className="flex items-center justify-between p-3 bg-background rounded-lg border-2 border-border card hover-lift">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
+                  <span className="text-white font-bold text-xs">😊</span>
+                </div>
+                <span className="font-bold text-xs text-foreground">{friend.name}</span>
+              </div>
+              <span className="text-xs text-green-600 font-bold">♥ FRIEND</span>
+            </div>
+          ))
+        )}
       </div>
-      <div className="text-center text-sm font-bold text-gray-600 mb-4">MORE NEARBY</div>
     </div>
   )
 
-     const addFriend = async (friendToAdd: (typeof nearbyFriends)[0]) => {
-     if (!friends.some((friend) => friend.name === friendToAdd.name)) {
-       try {
-         // Add friend to database
-         await createFriendAction({
-           userId: currentUser.id,
-           friendName: friendToAdd.name,
-           emoji: friendToAdd.emoji,
-           color: friendToAdd.color
-         })
-         
-         // Update local state
-         setFriends([...friends, friendToAdd])
-       } catch (error) {
-         console.error("Failed to add friend:", error)
-       }
-     }
-   }
+  const LeaderboardScreen = () => (
+    <div className="flex-1 flex flex-col p-4">
+      <div className="flex items-center gap-2 mb-4 flex-shrink-0">
+        <button 
+          onClick={() => setCurrentScreen("garden")}
+          className="text-2xl hover:text-green-600 bg-gray-100 hover:bg-gray-200 rounded-full p-2 hover-lift ripple"
+        >
+          ←
+        </button>
+        <div className="ml-auto flex items-center gap-3">
+          <div className="w-6 h-6 bg-green-600 rounded-full flex items-center justify-center text-white text-xs font-bold">
+            {profilePicture}
+          </div>
+          <div className="text-lg font-bold">${money}</div>
+        </div>
+      </div>
+
+      <div className="flex-1 flex flex-col space-y-4">
+        {/* View Toggle */}
+        <div className="flex gap-2 p-1 bg-muted rounded-lg">
+          <button
+            onClick={() => setCurrentLeaderboardView("friends")}
+            className={`flex-1 py-2 px-4 rounded-md text-sm font-bold transition-all hover-scale ${
+              currentLeaderboardView === "friends" 
+                ? "bg-background text-foreground shadow-sm" 
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            FRIENDS
+          </button>
+          <button
+            onClick={() => setCurrentLeaderboardView("global")}
+            className={`flex-1 py-2 px-4 rounded-md text-sm font-bold transition-all hover-scale ${
+              currentLeaderboardView === "global" 
+                ? "bg-background text-foreground shadow-sm" 
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            GLOBAL
+          </button>
+        </div>
+
+        {/* Current User Stats */}
+        <div className="bg-gradient-to-r from-green-500 to-green-600 rounded-lg p-4 text-white">
+          <div className="text-center">
+            <div className="text-sm font-bold mb-1">YOUR STATS</div>
+            <div className="text-2xl font-black">{getCurrentUserStats().completedTasks}</div>
+            <div className="text-xs opacity-90 mb-2">tasks completed</div>
+            <div className="text-sm font-bold">{getCurrentUserStats().completionRate}%</div>
+            <div className="text-xs opacity-90">completion rate</div>
+          </div>
+        </div>
+
+        {/* Current User Rank */}
+        <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg p-4 text-white">
+          <div className="text-center">
+            <div className="text-sm font-bold mb-1">YOUR RANK</div>
+            <div className="text-2xl font-black">{getCurrentUserRank()}</div>
+            <div className="text-xs opacity-90">
+              {currentLeaderboardView === "friends" ? "Among your friends" : "Global ranking"}
+            </div>
+          </div>
+        </div>
+
+        {/* Leaderboard Status */}
+        <div className="bg-muted rounded-lg p-3 text-center">
+          <div className="text-xs text-muted-foreground">
+            {isLoadingLeaderboard ? (
+              "🔄 Refreshing leaderboard..."
+            ) : lastLeaderboardRefresh ? (
+              `📊 Last updated: ${lastLeaderboardRefresh.toLocaleTimeString()}`
+            ) : (
+              "📊 Leaderboard ready"
+            )}
+          </div>
+        </div>
+
+        {/* Leaderboard List */}
+        <div className="flex-1 overflow-y-auto space-y-2">
+          {isLoadingLeaderboard ? (
+            <div className="text-center text-muted-foreground py-8">
+              Loading leaderboard...
+            </div>
+          ) : leaderboardError ? (
+            <div className="text-center text-red-500 py-8">
+              {leaderboardError}
+            </div>
+          ) : (currentLeaderboardView === "friends" ? friendsLeaderboardData : leaderboardData).length === 0 ? (
+            <div className="text-center text-muted-foreground py-8">
+              {currentLeaderboardView === "friends" 
+                ? "No friends data available yet. Complete some tasks to see your ranking!" 
+                : "No leaderboard data available yet. Complete some tasks to see your ranking!"
+              }
+            </div>
+          ) : (
+            (currentLeaderboardView === "friends" ? friendsLeaderboardData : leaderboardData).map((user, index) => (
+              <div key={user.userId} className={`flex items-center justify-between p-3 rounded-lg border-2 card hover-lift ${
+                user.userId === currentUser?.id 
+                  ? "border-green-500 bg-green-50" 
+                  : "border-border"
+              }`}>
+                <div className="flex items-center gap-3">
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold ${
+                    index === 0 ? "bg-yellow-500" : 
+                    index === 1 ? "bg-gray-400" : 
+                    index === 2 ? "bg-amber-600" : "bg-green-500"
+                  }`}>
+                    {index === 0 ? "🥇" : index === 1 ? "🥈" : index === 2 ? "🥉" : index + 1}
+                  </div>
+                  <div>
+                    <div className="font-bold text-xs text-foreground">
+                      {user.username}
+                      {user.userId === currentUser?.id && " (YOU)"}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      {user.completedTasks} tasks completed
+                    </div>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="text-sm font-bold text-foreground">{user.completedTasks}</div>
+                  <div className="text-xs text-muted-foreground">
+                    {user.completionRate}% rate
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+
+
+        {/* Refresh Button */}
+        <Button
+          onClick={loadLeaderboardData}
+          disabled={isLoadingLeaderboard}
+          className="w-full hover-lift ripple"
+        >
+          {isLoadingLeaderboard ? "REFRESHING..." : "REFRESH LEADERBOARD"}
+        </Button>
+      </div>
+    </div>
+  )
+
+  const ProfileScreen = () => (
+    <div className="flex-1 flex flex-col p-4">
+      <div className="flex items-center gap-2 mb-4 flex-shrink-0">
+        <button 
+          onClick={() => setCurrentScreen("garden")}
+          className="text-2xl hover:text-green-600 bg-gray-100 hover:bg-gray-200 rounded-full p-2 hover-lift ripple"
+        >
+          ←
+        </button>
+        <div className="ml-auto">
+        </div>
+      </div>
+      <div className="text-center mb-6 flex-shrink-0">
+        <div className="w-24 h-24 bg-green-500 mx-auto mb-4 relative rounded-full flex items-center justify-center">
+          <span className="text-6xl">{profilePicture}</span>
+        </div>
+        <div className="mb-4">
+          <h2 className="text-2xl font-black text-foreground mb-2">{username.toUpperCase()}</h2>
+          <p className="text-sm text-muted-foreground mb-3">GARDEN MASTER</p>
+          
+          {/* Edit Mode Indicator */}
+          {isProfileEditing && (
+            <div className="bg-blue-100 border border-blue-300 rounded-lg p-2 mb-3">
+              <p className="text-xs text-blue-700 font-medium text-center">
+                ✏️ EDITING PROFILE - Click SAVE when done or CANCEL to discard changes
+              </p>
+            </div>
+          )}
+          
+          {/* Edit Button */}
+          <div className="mb-3">
+            <Button
+              onClick={() => {
+                if (isProfileEditing) {
+                  // Save profile changes
+                  handleSaveProfile()
+                } else {
+                  // Enter edit mode
+                  setIsProfileEditing(true)
+                }
+              }}
+              className="bg-green-600 hover:bg-green-700 text-white font-bold text-sm px-4 py-2 hover-lift ripple"
+            >
+              {isProfileEditing ? "SAVE" : "EDIT PROFILE"}
+            </Button>
+            
+            {/* Cancel Button - Only show when editing */}
+            {isProfileEditing && (
+              <Button
+                onClick={() => setIsProfileEditing(false)}
+                variant="outline"
+                className="ml-2 bg-gray-500 hover:bg-gray-600 text-white font-bold text-sm px-4 py-2 hover-lift ripple"
+              >
+                CANCEL
+              </Button>
+            )}
+          </div>
+          
+          {/* Profile Picture Picker - Only show when editing */}
+          {isProfileEditing && (
+            <div className="bg-muted rounded-lg p-3 mb-3">
+              <p className="text-xs text-muted-foreground mb-2">Change Profile Picture</p>
+              <div className="grid grid-cols-8 gap-2 max-h-32 overflow-y-auto">
+                {["😊", "😎", "🤠", "👻", "🐱", "🐶", "🦊", "🐸", "🐼", "🐨", "🦁", "🐯", "🐮", "🐷", "🐸", "🐙", "🦄", "🌈", "⭐", "🎮", "🎨", "🎭", "🎪", "🎯", "🎲", "🎸", "🎹", "🎺", "🎻", "🎼", "🎵", "🎶", "🎤", "🎧", "🎬", "🎭", "🎨", "🎪", "🎯", "🎲", "🎸", "🎹", "🎺", "🎻", "🎼", "🎵", "🎶", "🎤", "🎧", "🎬"].slice(0, 32).map((emoji, index) => (
+                  <button
+                    key={index}
+                    onClick={() => updateProfilePicture(emoji)}
+                    className={`text-2xl p-1 rounded hover:bg-muted/80 hover-scale ${
+                      profilePicture === emoji ? "bg-green-200 ring-2 ring-green-500 celebration" : ""
+                    }`}
+                  >
+                    {emoji}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Tasks Section */}
+      <div className="flex-shrink-0">
+        <h3 className="text-lg font-black mb-3 text-center text-foreground">CURRENT TASKS</h3>
+        <div className="space-y-3 overflow-y-auto max-h-48">
+          {tasks.map((task) => (
+            <div
+              key={task.id}
+              className={`flex items-center gap-3 p-3 rounded-lg card ${task.completed ? "bg-green-100" : "bg-muted"}`}
+            >
+                          {task.icon ? (
+              renderImage(
+                task.icon,
+                task.name,
+                24,
+                24,
+                `h-6 w-6 object-contain ${task.completed ? "opacity-50" : ""}`
+              )
+            ) : (
+                <span className={`text-lg ${task.color} ${task.completed ? "opacity-50" : ""}`}>{task.emoji}</span>
+              )}
+              <div className="flex-1">
+                <div className={`text-xs font-bold mb-1 ${task.completed ? "line-through text-muted-foreground" : "text-foreground"}`}>
+                  {task.name}
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  {task.progress}/{task.target}
+                </div>
+                <div className="text-xs text-green-600 font-bold">${task.reward} reward</div>
+              </div>
+              {!task.completed && task.progress < task.target && (
+                <div className="flex gap-1">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="text-xs px-2 py-1 h-6 bg-transparent hover-scale ripple"
+                    onClick={() => updateTaskProgress(task.id, 1)}
+                  >
+                    +1
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="text-xs px-2 py-1 h-6 bg-transparent hover-scale ripple"
+                    onClick={() => updateTaskProgress(task.id, 5)}
+                  >
+                    +5
+                  </Button>
+                </div>
+              )}
+              {!task.completed && task.progress >= task.target && (
+                <Button
+                  size="sm"
+                  className="bg-green-600 hover:bg-green-700 text-white font-bold text-xs px-3 hover-scale ripple"
+                  onClick={() => completeTask(task.id)}
+                >
+                  COMPLETE
+                </Button>
+              )}
+              {task.completed && <div className="text-green-600 font-bold text-xs">✓ DONE</div>}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Leaderboard Button */}
+      <div className="flex-shrink-0 mt-4">
+        <Button 
+          onClick={() => setCurrentScreen("leaderboard")}
+          className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 hover-lift ripple"
+        >
+          🏆 LEADERBOARD
+        </Button>
+      </div>
+
+      {/* Settings Button */}
+      <div className="flex-shrink-0 mt-4">
+        <Button 
+          onClick={() => window.location.href = "/settings"}
+          className="w-full bg-secondary hover:bg-secondary/80 text-secondary-foreground font-bold py-3 hover-lift ripple"
+        >
+          ⚙️ SETTINGS
+        </Button>
+      </div>
+    </div>
+  )
+
+  const addFriend = async (friendToAdd: (typeof nearbyFriends)[0]) => {
+    if (!friends.some((friend) => friend.name === friendToAdd.name)) {
+      try {
+        // Add friend to database
+        await createFriendAction({
+          userId: currentUser.id,
+          friendName: friendToAdd.name,
+          emoji: friendToAdd.emoji,
+          color: friendToAdd.color
+        })
+        
+        // Update local state
+        setFriends([...friends, friendToAdd])
+      } catch (error) {
+        console.error("Failed to add friend:", error)
+      }
+    }
+  }
 
   const renderScreen = () => {
     switch (currentScreen) {
@@ -1277,10 +2542,185 @@ export default function GardenApp() {
         return <TasksScreen />
       case "add-friends":
         return <AddFriendsScreen />
+      case "profile":
+        return <ProfileScreen />
+      case "leaderboard":
+        return <LeaderboardScreen />
       default:
-        return <ShopScreen />
+        return <GardenScreen />
     }
   }
+
+  // Particle management functions
+  // NOTE: All particles have pointer-events: none to ensure they never block user interactions
+  // Particles are rendered at z-index 15-17, while interactive elements are at z-index 20+
+  const createParticle = (type: Particle['type'], x: number, y: number) => {
+    const id = `particle-${particleIdCounter}`
+    setParticleIdCounter(prev => prev + 1)
+    
+    let particle: Particle
+    switch (type) {
+      case 'sparkle':
+        particle = {
+          id,
+          x,
+          y,
+          vx: (Math.random() - 0.5) * 0.5,
+          vy: (Math.random() - 0.5) * 0.5,
+          size: Math.random() * 3 + 1,
+          opacity: Math.random() * 0.8 + 0.2,
+          type: 'sparkle',
+          color: ['#FFD700', '#FFA500', '#FF69B4', '#87CEEB'][Math.floor(Math.random() * 4)],
+          life: 0,
+          maxLife: Math.random() * 100 + 50
+        }
+        break
+      case 'dust':
+        particle = {
+          id,
+          x,
+          y,
+          vx: (Math.random() - 0.5) * 0.3,
+          vy: Math.random() * 0.2 + 0.1,
+          size: Math.random() * 2 + 0.5,
+          opacity: Math.random() * 0.6 + 0.1,
+          type: 'dust',
+          color: '#8B7355',
+          life: 0,
+          maxLife: Math.random() * 150 + 100
+        }
+        break
+      case 'leaf':
+        particle = {
+          id,
+          x,
+          y,
+          vx: (Math.random() - 0.5) * 0.4,
+          vy: Math.random() * 0.3 + 0.2,
+          size: Math.random() * 4 + 2,
+          opacity: Math.random() * 0.7 + 0.3,
+          type: 'leaf',
+          color: ['#228B22', '#32CD32', '#90EE90', '#98FB98'][Math.floor(Math.random() * 4)],
+          life: 0,
+          maxLife: Math.random() * 200 + 150
+        }
+        break
+      case 'firefly':
+        particle = {
+          id,
+          x,
+          y,
+          vx: (Math.random() - 0.5) * 0.6,
+          vy: (Math.random() - 0.5) * 0.6,
+          size: Math.random() * 2 + 1,
+          opacity: Math.random() * 0.9 + 0.1,
+          type: 'firefly',
+          color: '#FFFF00',
+          life: 0,
+          maxLife: Math.random() * 300 + 200
+        }
+        break
+      default:
+        return
+    }
+    
+    setParticles(prev => [...prev, particle])
+  }
+
+  const updateParticles = () => {
+    setParticles(prev => 
+      prev
+        .map(particle => ({
+          ...particle,
+          x: particle.x + particle.vx,
+          y: particle.y + particle.vy,
+          life: particle.life + 1,
+          opacity: particle.opacity * (1 - particle.life / particle.maxLife * 0.1)
+        }))
+        .filter(particle => particle.life < particle.maxLife)
+    )
+  }
+
+  const spawnRandomParticles = () => {
+    if (Math.random() < 0.1) { // 10% chance each frame
+      const x = Math.random() * 280 // Garden width
+      const y = Math.random() * 280 // Garden height
+      const types: Particle['type'][] = ['sparkle', 'dust', 'leaf', 'firefly']
+      const randomType = types[Math.floor(Math.random() * types.length)]
+      createParticle(randomType, x, y)
+    }
+    
+    // Spawn river-specific particles
+    if (Math.random() < 0.05) { // 5% chance each frame
+      const riverY = 120 + (Math.random() - 0.5) * 40 // Around river area
+      const x = Math.random() * 280
+      createParticle('sparkle', x, riverY)
+    }
+    
+    // Spawn leaf particles from trees
+    if (Math.random() < 0.03) { // 3% chance each frame
+      const treeAreas = [
+        { x: 20, y: 20, radius: 30 },   // XMAS TREE
+        { x: 20, y: 200, radius: 30 },  // SPRUCE TREE
+        { x: 120, y: 180, radius: 30 }, // SAKURA TREE
+        { x: 240, y: 180, radius: 30 }, // BONSAI TREE
+        { x: 120, y: 240, radius: 30 }  // XMAS TREE
+      ]
+      
+      const randomTree = treeAreas[Math.floor(Math.random() * treeAreas.length)]
+      const angle = Math.random() * Math.PI * 2
+      const distance = Math.random() * randomTree.radius
+      const x = randomTree.x + Math.cos(angle) * distance
+      const y = randomTree.y + Math.sin(angle) * distance
+      
+      if (x >= 0 && x <= 280 && y >= 0 && y <= 280) {
+        createParticle('leaf', x, y)
+      }
+    }
+  }
+
+  // Spawn particles around garden items for special effects
+  const spawnItemParticles = (item: GardenItem, type: 'hover' | 'place' | 'interact') => {
+    const baseX = item.x
+    const baseY = item.y
+    
+    if (type === 'hover') {
+      // Spawn a few sparkles around the item
+      for (let i = 0; i < 3; i++) {
+        const offsetX = (Math.random() - 0.5) * 30
+        const offsetY = (Math.random() - 0.5) * 30
+        createParticle('sparkle', baseX + offsetX, baseY + offsetY)
+      }
+    } else if (type === 'place') {
+      // Spawn a burst of particles when placing items
+      for (let i = 0; i < 8; i++) {
+        const offsetX = (Math.random() - 0.5) * 40
+        const offsetY = (Math.random() - 0.5) * 40
+        const types: Particle['type'][] = ['sparkle', 'dust', 'leaf']
+        const randomType = types[Math.floor(Math.random() * types.length)]
+        createParticle(randomType, baseX + offsetX, baseY + offsetY)
+      }
+    } else if (type === 'interact') {
+      // Spawn fireflies around interactive items
+      for (let i = 0; i < 5; i++) {
+        const offsetX = (Math.random() - 0.5) * 50
+        const offsetY = (Math.random() - 0.5) * 50
+        createParticle('firefly', baseX + offsetX, baseY + offsetY)
+      }
+    }
+  }
+
+  // Particle animation loop
+  useEffect(() => {
+    if (currentScreen === 'garden') {
+      const interval = setInterval(() => {
+        updateParticles()
+        spawnRandomParticles()
+      }, 50) // 20 FPS for smooth animation
+      
+      return () => clearInterval(interval)
+    }
+  }, [currentScreen])
 
   if (!isSignedIn) {
     return (
@@ -1304,24 +2744,12 @@ export default function GardenApp() {
   }
 
   return (
-    <div className="max-w-sm mx-auto bg-white rounded-3xl shadow-2xl overflow-hidden">
-      <div key={currentScreen} className="screen-enter">
+    <div className="w-full h-[800px] max-w-sm mx-auto bg-background rounded-3xl shadow-2xl overflow-hidden flex flex-col">
+
+      <div key={currentScreen} className="screen-enter slide-in flex-1 flex flex-col min-h-0 overflow-hidden">
         {renderScreen()}
       </div>
-      {currentScreen !== "tasks" && <BottomNav />}
-
-      <div className="fixed top-4 right-4 flex flex-col gap-2 z-50">
-        <Button size="sm" onClick={() => setCurrentScreen("tasks")} className="text-xs">
-          TASK
-        </Button>
-        <Button 
-          size="sm" 
-          onClick={() => window.location.href = "/settings"} 
-          className="text-xs bg-gray-600 hover:bg-gray-700"
-        >
-          ⚙️
-        </Button>
-      </div>
+      {currentScreen !== "tasks" && currentScreen !== "profile" && currentScreen !== "leaderboard" && <BottomNav />}
     </div>
   )
 }

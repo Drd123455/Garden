@@ -49,23 +49,33 @@ export default function SettingsPage() {
   const [newPassword, setNewPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null)
+  const [localUsername, setLocalUsername] = useState(settings.username)
+  const [localEmail, setLocalEmail] = useState(settings.email || "")
 
   useEffect(() => {
-    // Load current user data
+    // Load current user data only once on mount
     const currentUser = localStorage.getItem("currentUser")
     if (currentUser) {
       try {
         const user = JSON.parse(currentUser)
-        updateSettings({ username: user.username || "" })
+        setLocalUsername(user.username || "")
+        if (user.username && user.username !== settings.username) {
+          updateSettings({ username: user.username })
+        }
       } catch (error) {
         console.error("Failed to parse current user:", error)
       }
     }
-  }, [updateSettings])
+  }, []) // Remove updateSettings from dependencies
 
   const handleSaveSettings = async () => {
     setIsLoading(true)
     try {
+      // Update settings with local values before saving
+      updateSettings({ 
+        username: localUsername,
+        email: localEmail
+      })
       saveSettings()
       setMessage({ type: "success", text: "Settings saved successfully!" })
       setTimeout(() => setMessage(null), 3000)
@@ -175,26 +185,28 @@ export default function SettingsPage() {
     title: string
     children: React.ReactNode
   }) => (
-    <div className={`p-4 rounded-lg border-2 transition-all ${
+    <div className={`rounded-lg border-2 transition-all card hover-lift ${
       currentSection === section 
         ? "border-green-500 bg-green-50" 
-        : "border-gray-200 hover:border-gray-300"
+        : "border-border hover:border-green-300"
     }`}>
       <button
         onClick={() => setCurrentSection(section)}
-        className="flex items-center gap-3 w-full text-left"
+        className={`flex items-center gap-3 w-full p-4 text-left cursor-pointer hover-scale ${
+          currentSection === section ? "bg-green-50" : "bg-background hover:bg-muted/50"
+        }`}
       >
         <Icon className={`h-5 w-5 ${
-          currentSection === section ? "text-green-600" : "text-gray-500"
+          currentSection === section ? "text-green-600" : "text-muted-foreground"
         }`} />
         <span className={`font-bold text-sm ${
-          currentSection === section ? "text-green-700" : "text-gray-700"
+          currentSection === section ? "text-green-700" : "text-foreground"
         }`}>
           {title}
         </span>
       </button>
       {currentSection === section && (
-        <div className="mt-4 space-y-4">
+        <div className="p-4 pt-0 space-y-4 slide-in">
           {children}
         </div>
       )}
@@ -202,12 +214,12 @@ export default function SettingsPage() {
   )
 
   return (
-    <div className="max-w-sm mx-auto bg-white rounded-3xl shadow-2xl overflow-hidden">
-      <div className="p-4 bg-gradient-to-r from-green-500 to-green-600">
+    <div className="w-full h-[800px] max-w-sm mx-auto bg-background rounded-3xl shadow-2xl overflow-hidden flex flex-col">
+      <div className="p-4 bg-gradient-to-r from-green-500 to-green-600 flex-shrink-0">
         <div className="flex items-center gap-3 text-white">
           <button 
             onClick={() => window.history.back()}
-            className="text-2xl hover:text-green-100 transition-colors"
+            className="text-2xl hover:text-green-100 hover-scale ripple bg-white/20 hover:bg-white/30 rounded-full p-2 transition-all"
           >
             ←
           </button>
@@ -216,10 +228,10 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      <div className="p-4 space-y-4">
+      <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {/* Message Display */}
         {message && (
-          <div className={`p-3 rounded-lg text-sm font-bold ${
+          <div className={`p-3 rounded-lg text-sm font-bold fade-in ${
             message.type === "success" 
               ? "bg-green-100 text-green-700 border border-green-300" 
               : "bg-red-100 text-red-700 border border-red-300"
@@ -233,23 +245,23 @@ export default function SettingsPage() {
           <SettingsSection section="profile" icon={User} title="PROFILE">
             <div className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-gray-700 mb-2">USERNAME</label>
-                                 <Input
-                   value={settings.username}
-                   onChange={(e) => updateSettings({ username: e.target.value })}
-                   className="text-sm"
-                   placeholder="Enter username"
-                 />
+                <label className="block text-xs font-bold text-foreground mb-2">USERNAME</label>
+                <Input
+                  value={localUsername}
+                  onChange={(e) => setLocalUsername(e.target.value)}
+                  className="text-sm input-field"
+                  placeholder="Enter username"
+                />
               </div>
               <div>
-                <label className="block text-xs font-bold text-gray-700 mb-2">EMAIL (OPTIONAL)</label>
-                                 <Input
-                   type="email"
-                   value={settings.email}
-                   onChange={(e) => updateSettings({ email: e.target.value })}
-                   className="text-sm"
-                   placeholder="Enter email"
-                 />
+                <label className="block text-xs font-bold text-foreground mb-2">EMAIL (OPTIONAL)</label>
+                <Input
+                  type="email"
+                  value={localEmail}
+                  onChange={(e) => setLocalEmail(e.target.value)}
+                  className="text-sm input-field"
+                  placeholder="Enter email"
+                />
               </div>
             </div>
           </SettingsSection>
@@ -257,41 +269,41 @@ export default function SettingsPage() {
           <SettingsSection section="game" icon={Gamepad2} title="GAME SETTINGS">
             <div className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-gray-700 mb-2">GARDEN GRID SIZE</label>
-                                 <select
-                   value={settings.gardenGridSize}
-                   onChange={(e) => updateSettings({ 
-                     gardenGridSize: e.target.value as "small" | "medium" | "large" 
-                   })}
-                   className="w-full p-2 border-2 border-gray-300 rounded-md text-sm font-bold focus:outline-none focus:border-green-500"
-                 >
+                <label className="block text-xs font-bold text-foreground mb-2">GARDEN GRID SIZE</label>
+                <select
+                  value={settings.gardenGridSize}
+                  onChange={(e) => updateSettings({ 
+                    gardenGridSize: e.target.value as "small" | "medium" | "large" 
+                  })}
+                  className="w-full p-2 border-2 border-border rounded-md text-sm font-bold focus:outline-none focus:border-green-500 input-field"
+                >
                   <option value="small">Small (Compact)</option>
                   <option value="medium">Medium (Default)</option>
                   <option value="large">Large (Spacious)</option>
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-bold text-gray-700 mb-2">ANIMATION SPEED</label>
-                                 <select
-                   value={settings.animationSpeed}
-                   onChange={(e) => updateSettings({ 
-                     animationSpeed: e.target.value as "slow" | "normal" | "fast" 
-                   })}
-                   className="w-full p-2 border-2 border-gray-300 rounded-md text-sm font-bold focus:outline-none focus:border-green-500"
-                 >
+                <label className="block text-xs font-bold text-foreground mb-2">ANIMATION SPEED</label>
+                <select
+                  value={settings.animationSpeed}
+                  onChange={(e) => updateSettings({ 
+                    animationSpeed: e.target.value as "slow" | "normal" | "fast" 
+                  })}
+                  className="w-full p-2 border-2 border-border rounded-md text-sm font-bold focus:outline-none focus:border-green-500 input-field"
+                >
                   <option value="slow">Slow</option>
                   <option value="normal">Normal</option>
                   <option value="fast">Fast</option>
                 </select>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm font-bold text-gray-700">AUTO SAVE</span>
-                                 <button
-                   onClick={() => updateSettings({ autoSave: !settings.autoSave })}
-                   className={`w-12 h-6 rounded-full transition-colors ${
-                     settings.autoSave ? "bg-green-500" : "bg-gray-300"
-                   }`}
-                 >
+                <span className="text-sm font-bold text-foreground">AUTO SAVE</span>
+                <button
+                  onClick={() => updateSettings({ autoSave: !settings.autoSave })}
+                  className={`w-12 h-6 rounded-full transition-colors cursor-pointer hover-scale ${
+                    settings.autoSave ? "bg-green-500" : "bg-muted"
+                  }`}
+                >
                   <div className={`w-4 h-4 bg-white rounded-full transition-transform ${
                     settings.autoSave ? "translate-x-6" : "translate-x-1"
                   }`} />
@@ -303,38 +315,38 @@ export default function SettingsPage() {
           <SettingsSection section="appearance" icon={Palette} title="APPEARANCE">
             <div className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-gray-700 mb-2">THEME</label>
+                <label className="block text-xs font-bold text-foreground mb-2">THEME</label>
                 <div className="grid grid-cols-3 gap-2">
-                                     <button
-                     onClick={() => updateSettings({ theme: "light" })}
-                     className={`p-3 rounded-lg border-2 flex flex-col items-center gap-1 ${
-                       settings.theme === "light" 
-                         ? "border-green-500 bg-green-50" 
-                         : "border-gray-200 hover:border-gray-300"
-                     }`}
-                   >
+                  <button
+                    onClick={() => updateSettings({ theme: "light" })}
+                    className={`p-3 rounded-lg border-2 flex flex-col items-center gap-1 cursor-pointer hover-scale ${
+                      settings.theme === "light" 
+                        ? "border-green-500 bg-green-50" 
+                        : "border-border hover:border-green-300"
+                    }`}
+                  >
                     <Sun className="h-4 w-4" />
                     <span className="text-xs font-bold">Light</span>
                   </button>
-                                     <button
-                     onClick={() => updateSettings({ theme: "dark" })}
-                     className={`p-3 rounded-lg border-2 flex flex-col items-center gap-1 ${
-                       settings.theme === "dark" 
-                         ? "border-green-500 bg-green-50" 
-                         : "border-gray-200 hover:border-gray-300"
-                     }`}
-                   >
+                  <button
+                    onClick={() => updateSettings({ theme: "dark" })}
+                    className={`p-3 rounded-lg border-2 flex flex-col items-center gap-1 cursor-pointer hover-scale ${
+                      settings.theme === "dark" 
+                        ? "border-green-500 bg-green-50" 
+                        : "border-border hover:border-green-300"
+                    }`}
+                  >
                     <Moon className="h-4 w-4" />
                     <span className="text-xs font-bold">Dark</span>
                   </button>
-                                     <button
-                     onClick={() => updateSettings({ theme: "system" })}
-                     className={`p-3 rounded-lg border-2 flex flex-col items-center gap-1 ${
-                       settings.theme === "system" 
-                         ? "border-green-500 bg-green-50" 
-                         : "border-gray-200 hover:border-gray-300"
-                     }`}
-                   >
+                  <button
+                    onClick={() => updateSettings({ theme: "system" })}
+                    className={`p-3 rounded-lg border-2 flex flex-col items-center gap-1 cursor-pointer hover-scale ${
+                      settings.theme === "system" 
+                        ? "border-green-500 bg-green-50" 
+                        : "border-border hover:border-green-300"
+                    }`}
+                  >
                     <Monitor className="h-4 w-4" />
                     <span className="text-xs font-bold">System</span>
                   </button>
@@ -348,14 +360,14 @@ export default function SettingsPage() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   {settings.soundEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
-                  <span className="text-sm font-bold text-gray-700">SOUND EFFECTS</span>
+                  <span className="text-sm font-bold text-foreground">SOUND EFFECTS</span>
                 </div>
-                                 <button
-                   onClick={() => updateSettings({ soundEnabled: !settings.soundEnabled })}
-                   className={`w-12 h-6 rounded-full transition-colors ${
-                     settings.soundEnabled ? "bg-green-500" : "bg-gray-300"
-                   }`}
-                 >
+                <button
+                  onClick={() => updateSettings({ soundEnabled: !settings.soundEnabled })}
+                  className={`w-12 h-6 rounded-full transition-colors cursor-pointer hover-scale ${
+                    settings.soundEnabled ? "bg-green-500" : "bg-muted"
+                  }`}
+                >
                   <div className={`w-4 h-4 bg-white rounded-full transition-transform ${
                     settings.soundEnabled ? "translate-x-6" : "translate-x-1"
                   }`} />
@@ -364,14 +376,14 @@ export default function SettingsPage() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   {settings.notificationsEnabled ? <Bell className="h-4 w-4" /> : <BellOff className="h-4 w-4" />}
-                  <span className="text-sm font-bold text-gray-700">PUSH NOTIFICATIONS</span>
+                  <span className="text-sm font-bold text-foreground">PUSH NOTIFICATIONS</span>
                 </div>
-                                 <button
-                   onClick={() => updateSettings({ notificationsEnabled: !settings.notificationsEnabled })}
-                   className={`w-12 h-6 rounded-full transition-colors ${
-                     settings.notificationsEnabled ? "bg-green-500" : "bg-gray-300"
-                   }`}
-                 >
+                <button
+                  onClick={() => updateSettings({ notificationsEnabled: !settings.notificationsEnabled })}
+                  className={`w-12 h-6 rounded-full transition-colors cursor-pointer hover-scale ${
+                    settings.notificationsEnabled ? "bg-green-500" : "bg-muted"
+                  }`}
+                >
                   <div className={`w-4 h-4 bg-white rounded-full transition-transform ${
                     settings.notificationsEnabled ? "translate-x-6" : "translate-x-1"
                   }`} />
@@ -384,24 +396,24 @@ export default function SettingsPage() {
             <div className="space-y-4">
               <Button
                 onClick={exportData}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm"
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm hover-lift ripple"
               >
                 <Download className="h-4 w-4 mr-2" />
                 EXPORT DATA
               </Button>
               <div>
-                <label className="block text-xs font-bold text-gray-700 mb-2">IMPORT DATA</label>
+                <label className="block text-xs font-bold text-foreground mb-2">IMPORT DATA</label>
                 <input
                   type="file"
                   accept=".json"
                   onChange={importData}
-                  className="w-full p-2 border-2 border-gray-300 rounded-md text-sm font-bold focus:outline-none focus:border-green-500"
+                  className="w-full p-2 border-2 border-border rounded-md text-sm font-bold focus:outline-none focus:border-green-500 input-field"
                 />
               </div>
               <Button
                 onClick={clearData}
                 variant="outline"
-                className="w-full border-red-300 text-red-600 hover:bg-red-50 font-bold text-sm"
+                className="w-full border-red-300 text-red-600 hover:bg-red-50 font-bold text-sm hover-lift ripple"
               >
                 <Trash2 className="h-4 w-4 mr-2" />
                 CLEAR ALL DATA
@@ -412,47 +424,47 @@ export default function SettingsPage() {
           <SettingsSection section="account" icon={User} title="ACCOUNT">
             <div className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-gray-700 mb-2">CURRENT PASSWORD</label>
+                <label className="block text-xs font-bold text-foreground mb-2">CURRENT PASSWORD</label>
                 <div className="relative">
                   <Input
                     type={showPassword ? "text" : "password"}
                     value={currentPassword}
                     onChange={(e) => setCurrentPassword(e.target.value)}
-                    className="text-sm pr-10"
+                    className="text-sm pr-10 input-field"
                     placeholder="Enter current password"
                   />
                   <button
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-2 top-1/2 transform -translate-y-1/2"
+                    className="absolute right-2 top-1/2 transform -translate-y-1/2 cursor-pointer hover-scale"
                   >
-                    {showPassword ? <EyeOff className="h-4 w-4 text-gray-500" /> : <Eye className="h-4 w-4 text-gray-500" />}
+                    {showPassword ? <EyeOff className="h-4 w-4 text-muted-foreground" /> : <Eye className="h-4 w-4 text-muted-foreground" />}
                   </button>
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-bold text-gray-700 mb-2">NEW PASSWORD</label>
+                <label className="block text-xs font-bold text-foreground mb-2">NEW PASSWORD</label>
                 <Input
                   type="password"
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
-                  className="text-sm"
+                  className="text-sm input-field"
                   placeholder="Enter new password"
                 />
               </div>
               <div>
-                <label className="block text-xs font-bold text-gray-700 mb-2">CONFIRM NEW PASSWORD</label>
+                <label className="block text-xs font-bold text-foreground mb-2">CONFIRM NEW PASSWORD</label>
                 <Input
                   type="password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="text-sm"
+                  className="text-sm input-field"
                   placeholder="Confirm new password"
                 />
               </div>
               <Button
                 onClick={changePassword}
                 disabled={isLoading || !currentPassword || !newPassword || !confirmPassword}
-                className="w-full bg-green-600 hover:bg-green-700 text-white font-bold text-sm"
+                className="w-full bg-green-600 hover:bg-green-700 text-white font-bold text-sm hover-lift ripple"
               >
                 <Save className="h-4 w-4 mr-2" />
                 {isLoading ? "CHANGING..." : "CHANGE PASSWORD"}
@@ -460,7 +472,7 @@ export default function SettingsPage() {
               <Button
                 onClick={logout}
                 variant="outline"
-                className="w-full border-gray-300 text-gray-600 hover:bg-gray-50 font-bold text-sm"
+                className="w-full border-border text-foreground hover:bg-muted font-bold text-sm hover-lift ripple"
               >
                 <LogOut className="h-4 w-4 mr-2" />
                 LOGOUT
@@ -470,14 +482,14 @@ export default function SettingsPage() {
         </div>
 
         {/* Save Button */}
-                 <Button
-           onClick={handleSaveSettings}
-           disabled={isLoading}
-           className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3"
-         >
-           <Save className="h-4 w-4 mr-2" />
-           {isLoading ? "SAVING..." : "SAVE SETTINGS"}
-         </Button>
+        <Button
+          onClick={handleSaveSettings}
+          disabled={isLoading}
+          className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 hover-lift ripple flex-shrink-0"
+        >
+          <Save className="h-4 w-4 mr-2" />
+          {isLoading ? "SAVING..." : "SAVE SETTINGS"}
+        </Button>
       </div>
     </div>
   )
