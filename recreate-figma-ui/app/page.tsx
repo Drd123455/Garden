@@ -287,12 +287,34 @@ export default function GardenApp() {
     { id: "5", name: "BONSAI TREE", emoji: "🌳", icon: BonsaiPng, color: "text-green-600", x: 240, y: 180 },
     { id: "6", name: "XMAS TREE", emoji: "🎄", icon: XmasPng, color: "text-green-600", x: 120, y: 240 },
   ])
+  const [selectedItem, setSelectedItem] = useState<GardenItem | null>(null)
+  const [isDragging, setIsDragging] = useState(false)
+  const [dragPreview, setDragPreview] = useState<{
+    show: boolean
+    x: number
+    y: number
+    item: any
+  } | null>(null)
+  const [touchDragData, setTouchDragData] = useState<{
+    data: DragData
+    startX: number
+    startY: number
+    currentX?: number
+    currentY?: number
+    element: HTMLElement
+  } | null>(null)
   const [friends, setFriends] = useState<Friend[]>([
     { name: "DAAKSH", emoji: "🦆", color: "text-yellow-600" },
-    { name: "CAN", emoji: "🚢", color: "text-blue-600" },
-    { name: "EMMA", emoji: "🍷", color: "text-red-600" },
-    { name: "KEYA", emoji: "🍷", color: "text-red-500" },
+    { name: "EMMA", emoji: "🦋", color: "text-pink-400" },
+    { name: "JIGYA", emoji: "🦊", color: "text-orange-500" },
+    { name: "KEYA", emoji: "🦁", color: "text-yellow-700" },
+    { name: "MAYA", emoji: "🐨", color: "text-gray-600" },
+    { name: "RAHUL", emoji: "🐯", color: "text-orange-600" },
+    { name: "SAMARTH", emoji: "🐻", color: "text-brown-600" },
+    { name: "CAN", emoji: "🦒", color: "text-yellow-800" },
+    { name: "ANGELINA", emoji: "🦄", color: "text-purple-400" },
   ])
+  const [isTouching, setIsTouching] = useState(false)
 
   // World page state
   const [worldUsers, setWorldUsers] = useState<WorldUser[]>([])
@@ -319,44 +341,13 @@ export default function GardenApp() {
   const [moneyAnimation, setMoneyAnimation] = useState<{ show: boolean; amount: number }>({ show: false, amount: 0 })
   const [droppingItems, setDroppingItems] = useState<Set<string>>(new Set())
 
-  // Touch drag and drop state for mobile
-  const [touchDragData, setTouchDragData] = useState<{
-    data: DragData
-    startX: number
-    startY: number
-    currentX?: number
-    currentY?: number
-    element: HTMLElement
-  } | null>(null)
-  const [isTouching, setIsTouching] = useState(false)
-  const [dragPreview, setDragPreview] = useState<{
-    show: boolean
-    x: number
-    y: number
-    item: any
-  } | null>(null)
+
 
   // Profile picture state
   const [profilePicture, setProfilePicture] = useState<string>("😊")
   const [isProfileEditing, setIsProfileEditing] = useState(false)
 
-  // Particle system state for garden liveliness
-  const [particles, setParticles] = useState<Array<{
-    id: string
-    x: number
-    y: number
-    vx: number
-    vy: number
-    type: 'leaf' | 'petal' | 'sparkle' | 'snowflake' | 'firefly'
-    rotation: number
-    size: number
-    opacity: number
-    color: string
-  }>>([])
-  const [windStrength, setWindStrength] = useState(0.5)
-  const [windDirection, setWindDirection] = useState(1) // 1 for right, -1 for left
-  const [season, setSeason] = useState<'spring' | 'summer' | 'autumn' | 'winter'>('spring')
-  const [particlesEnabled, setParticlesEnabled] = useState(false) // Completely disabled
+
 
   // Function to update profile picture
   const updateProfilePicture = (emoji: string) => {
@@ -441,48 +432,7 @@ export default function GardenApp() {
     }
   }, [currentScreen, currentUser])
 
-  // Initialize particle system
-  useEffect(() => {
-    if (!particlesEnabled) return
-    // Create initial particles
-    const initialParticles = Array.from({ length: 5 }, () => createParticle()) // Reduced from 10 to 5
-    setParticles(initialParticles)
-  }, [particlesEnabled])
 
-  // Particle animation loop
-  useEffect(() => {
-    if (!particlesEnabled) return
-    const particleInterval = setInterval(() => {
-      updateParticles()
-    }, 100) // Reduced from 50ms to 100ms to reduce re-renders
-
-    return () => clearInterval(particleInterval)
-  }, [particlesEnabled])
-
-  // Wind animation loop
-  useEffect(() => {
-    if (!particlesEnabled) return
-    const windInterval = setInterval(() => {
-      updateWind()
-    }, 500) // Increased from 200ms to 500ms to reduce re-renders
-
-    return () => clearInterval(windInterval)
-  }, [particlesEnabled])
-
-  // Seasonal change loop
-  useEffect(() => {
-    if (!particlesEnabled) return
-    const seasonInterval = setInterval(() => {
-      setSeason(prev => {
-        const seasons: Array<'spring' | 'summer' | 'autumn' | 'winter'> = ['spring', 'summer', 'autumn', 'winter']
-        const currentIndex = seasons.indexOf(prev)
-        const nextIndex = (currentIndex + 1) % seasons.length
-        return seasons[nextIndex]
-      })
-    }, 60000) // Increased from 30 seconds to 60 seconds to reduce re-renders
-
-    return () => clearInterval(seasonInterval)
-  }, [particlesEnabled])
 
   // Helper function to refresh leaderboard if on leaderboard screen
   const refreshLeaderboardIfNeeded = () => {
@@ -1306,7 +1256,7 @@ export default function GardenApp() {
     
     // Store touch data for mobile drag and drop
     setTouchDragData({
-      data,
+      data: { type: "inventory", item: data.item },
       startX: touch.clientX,
       startY: touch.clientY,
       currentX: touch.clientX,
@@ -1344,8 +1294,8 @@ export default function GardenApp() {
         
         setDragPreview({
           show: true,
-          x: Math.max(0, Math.min(x, rect.width - 32)),
-          y: Math.max(0, Math.min(y, rect.height - 32)),
+          x,
+          y,
           item: touchDragData.data.item
         })
       }
@@ -1358,8 +1308,8 @@ export default function GardenApp() {
         
         setDragPreview({
           show: true,
-          x: Math.max(0, Math.min(x, rect.width - 32)),
-          y: Math.max(0, Math.min(y, rect.height - 32)),
+          x,
+          y,
           item: touchDragData.data.item
         })
       }
@@ -1696,32 +1646,11 @@ export default function GardenApp() {
 
   const GardenScreen = () => (
     <div className="flex-1 flex flex-col">
-      {/* Simple Background Effects - No Particles */}
-      <div 
-        className="absolute inset-0 pointer-events-none"
-        style={{ 
-          zIndex: 1,
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: 'transparent'
-        }}
-      >
-        {/* Static floating elements for visual interest */}
-        <div className="absolute top-20 left-10 text-2xl text-green-600/30 pointer-events-none">🍃</div>
-        <div className="absolute top-40 right-16 text-xl text-pink-400/30 pointer-events-none">🌸</div>
-        <div className="absolute top-60 left-20 text-lg text-yellow-400/30 pointer-events-none">✨</div>
-        <div className="absolute top-80 right-24 text-xl text-blue-400/30 pointer-events-none">❄️</div>
-        <div className="absolute top-100 left-32 text-lg text-purple-400/30 pointer-events-none">🔥</div>
-        
-        {/* Additional static elements */}
-        <div className="absolute top-120 right-8 text-lg text-green-500/20 pointer-events-none">🍃</div>
-        <div className="absolute top-140 left-16 text-xl text-pink-500/20 pointer-events-none">🌸</div>
-        <div className="absolute top-160 right-20 text-lg text-yellow-500/20 pointer-events-none">✨</div>
+      <div className="p-4 pb-2 flex-shrink-0">
+        <div className="flex justify-between items-center mb-3">
+          <h1 className="text-2xl font-black text-foreground">GARDEN</h1>
+        </div>
       </div>
-
       <div className="p-4 pb-2 flex-shrink-0">
         <div className="flex justify-between items-center mb-4">
           <div className="w-6 h-6 bg-green-600 rounded-full flex items-center justify-center text-white text-xs font-bold">
@@ -1741,13 +1670,7 @@ export default function GardenApp() {
           onTouchEnd={handleTouchEnd}
           data-garden-area
         >
-          {/* Test Button to Check Clicking */}
-          <button
-            onClick={() => alert('Garden area clicking works!')}
-            className="absolute top-2 left-2 z-50 bg-red-500 text-white px-2 py-1 rounded text-xs"
-          >
-            TEST CLICK
-          </button>
+
           {/* Garden Items Layer - Highest Priority for Interaction */}
           {gardenItems.map((item) => (
             <div
@@ -1760,8 +1683,6 @@ export default function GardenApp() {
               style={{ 
                 left: item.x, 
                 top: item.y,
-                transform: `rotate(${windStrength * windDirection * 1}deg)`,
-                transition: 'transform 0.8s ease-out',
                 zIndex: 50
               }}
               draggable
@@ -1812,28 +1733,7 @@ export default function GardenApp() {
           )}
 
           {/* UI Indicators Layer */}
-          <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 20 }}>
-            {/* Wind Indicator */}
-            <div 
-              className="absolute top-2 right-2 text-xs text-white bg-black/20 px-2 py-1 rounded-full wind-indicator"
-              style={{
-                transform: `translateX(${windDirection * windStrength * 10}px)`,
-                transition: 'transform 0.5s ease-out'
-              }}
-            >
-              💨 {windStrength > 0.8 ? 'Strong' : windStrength > 0.5 ? 'Moderate' : 'Light'} Wind
-            </div>
 
-            {/* Season Indicator */}
-            <div className="absolute top-2 left-2 text-xs text-white bg-black/20 px-2 py-1 rounded-full">
-              {season === 'spring' && '🌸 Spring'}
-              {season === 'summer' && '☀️ Summer'}
-              {season === 'autumn' && '🍂 Autumn'}
-              {season === 'winter' && '❄️ Winter'}
-            </div>
-
-
-          </div>
         </div>
       </div>
       <div
@@ -2635,95 +2535,7 @@ export default function GardenApp() {
 
 
 
-  // Particle system functions for garden liveliness - Re-enabled with fixes
-  const createParticle = () => {
-    // Seasonal particle types
-    const seasonalTypes = {
-      spring: ['petal', 'sparkle', 'leaf'],
-      summer: ['sparkle', 'firefly', 'leaf'],
-      autumn: ['leaf', 'petal', 'sparkle'],
-      winter: ['snowflake', 'sparkle', 'leaf']
-    }
-    
-    const availableTypes = seasonalTypes[season]
-    const type = availableTypes[Math.floor(Math.random() * availableTypes.length)] as 'leaf' | 'petal' | 'sparkle' | 'snowflake' | 'firefly'
-    
-    const particle = {
-      id: Math.random().toString(),
-      x: Math.random() * 360 + 20, // Garden width (400) - 40 for margins
-      y: Math.random() * 240 + 20, // Garden height (280) - 40 for margins
-      vx: (Math.random() - 0.5) * 0.5 + windStrength * windDirection * 0.3,
-      vy: Math.random() * 0.3 + 0.1,
-      type,
-      rotation: Math.random() * 360,
-      size: Math.random() * 0.5 + 0.5,
-      opacity: Math.random() * 0.5 + 0.5,
-      color: `hsl(${Math.random() * 360}deg, 50%, 50%)`
-    }
-    
-    return particle
-  }
 
-  const updateParticles = () => {
-    setParticles(prev => {
-      // Only update if there are actually particles to update
-      if (prev.length === 0) return prev
-      
-      const updated = prev.map(particle => {
-        // Update position
-        let newX = particle.x + particle.vx
-        let newY = particle.y + particle.vy
-        
-        // Add wind effect
-        newX += windStrength * windDirection * 0.1
-        
-        // Update rotation
-        const newRotation = particle.rotation + 1
-        
-        // Wrap around edges
-        if (newX < 20) newX = 380
-        if (newX > 380) newX = 20
-        if (newY < 20) newY = 260
-        if (newY > 260) newY = 20
-        
-        return {
-          ...particle,
-          x: newX,
-          y: newY,
-          rotation: newRotation
-        }
-      })
-      
-      // Only add new particles occasionally to reduce re-renders
-      if (updated.length < 10 && Math.random() < 0.3) {
-        updated.push(createParticle())
-      }
-      
-      // Only remove particles occasionally to reduce re-renders
-      if (Math.random() < 0.01) {
-        return updated.slice(1)
-      }
-      
-      return updated
-    })
-  }
-
-  const updateWind = () => {
-    // Only update wind occasionally to reduce re-renders
-    if (Math.random() < 0.5) {
-      setWindStrength(prev => {
-        const change = (Math.random() - 0.5) * 0.05 // Reduced change amount
-        const newStrength = Math.max(0.1, Math.min(1.5, prev + change))
-        // Only update if change is significant
-        return Math.abs(newStrength - prev) > 0.01 ? newStrength : prev
-      })
-    }
-    
-    // Only change wind direction occasionally
-    if (Math.random() < 0.005) {
-      setWindDirection(prev => prev * -1)
-    }
-  }
 
   if (!isSignedIn) {
     return (
@@ -2748,56 +2560,7 @@ export default function GardenApp() {
 
   return (
     <div className="w-full h-[800px] max-w-sm mx-auto bg-background rounded-3xl shadow-2xl overflow-hidden flex flex-col">
-      <style jsx>{`
-        @keyframes float {
-          0%, 100% { transform: translateY(0px) rotate(0deg); }
-          50% { transform: translateY(-10px) rotate(180deg); }
-        }
-        
-        @keyframes sparkle {
-          0%, 100% { opacity: 0.5; transform: scale(1) rotate(0deg); }
-          50% { opacity: 1; transform: scale(1.2) rotate(180deg); }
-        }
-        
-        @keyframes sway {
-          0%, 100% { transform: rotate(-5deg); }
-          50% { transform: rotate(5deg); }
-        }
-        
-        @keyframes fall {
-          0% { transform: translateY(-20px) rotate(0deg); }
-          100% { transform: translateY(300px) rotate(360deg); }
-        }
-        
-        @keyframes glow {
-          0%, 100% { opacity: 0.5; filter: brightness(1); }
-          50% { opacity: 1; filter: brightness(1.5); }
-        }
-        
-        .particle-leaf {
-          animation: float 3s ease-in-out infinite;
-        }
-        
-        .particle-petal {
-          animation: sway 4s ease-in-out infinite;
-        }
-        
-        .particle-sparkle {
-          animation: sparkle 2s ease-in-out infinite;
-        }
-        
-        .particle-snowflake {
-          animation: fall 6s linear infinite;
-        }
-        
-        .particle-firefly {
-          animation: glow 3s ease-in-out infinite;
-        }
-        
-        .wind-indicator {
-          animation: sway 3s ease-in-out infinite;
-        }
-      `}</style>
+
       <div key={currentScreen} className="screen-enter slide-in flex-1 flex flex-col min-h-0 overflow-hidden">
         {renderScreen()}
       </div>
