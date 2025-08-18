@@ -1316,14 +1316,21 @@ export default function GardenApp() {
       // Load global leaderboard
       const globalResult = await getLeaderboardDataAction()
       if (globalResult.status === "success" && globalResult.data) {
+        console.log("Global leaderboard data:", globalResult.data)
         setLeaderboardData(globalResult.data)
+      } else {
+        console.log("Global leaderboard result:", globalResult)
       }
 
       // Load friends leaderboard
       const friendUsernames = friends.map(f => f.name)
+      console.log("Friend usernames:", friendUsernames)
       const friendsResult = await getFriendsLeaderboardAction(currentUser.id, friendUsernames)
       if (friendsResult.status === "success" && friendsResult.data) {
+        console.log("Friends leaderboard data:", friendsResult.data)
         setFriendsLeaderboardData(friendsResult.data)
+      } else {
+        console.log("Friends leaderboard result:", friendsResult)
       }
     } catch (error) {
       console.error("Failed to load leaderboard data:", error)
@@ -1340,6 +1347,16 @@ export default function GardenApp() {
     } else {
       const userRank = leaderboardData.findIndex(user => user.userId === currentUser?.id) + 1
       return userRank > 0 ? userRank : "N/A"
+    }
+  }
+
+  const getCurrentUserStats = () => {
+    if (currentLeaderboardView === "friends") {
+      const userData = friendsLeaderboardData.find(user => user.userId === currentUser?.id)
+      return userData ? { completedTasks: userData.completedTasks, completionRate: userData.completionRate } : { completedTasks: 0, completionRate: 0 }
+    } else {
+      const userData = leaderboardData.find(user => user.userId === currentUser?.id)
+      return userData ? { completedTasks: userData.completedTasks, completionRate: userData.completionRate } : { completedTasks: 0, completionRate: 0 }
     }
   }
 
@@ -2031,8 +2048,19 @@ export default function GardenApp() {
           </button>
         </div>
 
-        {/* Current User Rank */}
+        {/* Current User Stats */}
         <div className="bg-gradient-to-r from-green-500 to-green-600 rounded-lg p-4 text-white">
+          <div className="text-center">
+            <div className="text-sm font-bold mb-1">YOUR STATS</div>
+            <div className="text-2xl font-black">{getCurrentUserStats().completedTasks}</div>
+            <div className="text-xs opacity-90 mb-2">tasks completed</div>
+            <div className="text-sm font-bold">{getCurrentUserStats().completionRate}%</div>
+            <div className="text-xs opacity-90">completion rate</div>
+          </div>
+        </div>
+
+        {/* Current User Rank */}
+        <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg p-4 text-white">
           <div className="text-center">
             <div className="text-sm font-bold mb-1">YOUR RANK</div>
             <div className="text-2xl font-black">{getCurrentUserRank()}</div>
@@ -2051,6 +2079,13 @@ export default function GardenApp() {
           ) : leaderboardError ? (
             <div className="text-center text-red-500 py-8">
               {leaderboardError}
+            </div>
+          ) : (currentLeaderboardView === "friends" ? friendsLeaderboardData : leaderboardData).length === 0 ? (
+            <div className="text-center text-muted-foreground py-8">
+              {currentLeaderboardView === "friends" 
+                ? "No friends data available yet. Complete some tasks to see your ranking!" 
+                : "No leaderboard data available yet. Complete some tasks to see your ranking!"
+              }
             </div>
           ) : (
             (currentLeaderboardView === "friends" ? friendsLeaderboardData : leaderboardData).map((user, index) => (
@@ -2086,6 +2121,17 @@ export default function GardenApp() {
               </div>
             ))
           )}
+        </div>
+
+        {/* Debug Info (remove in production) */}
+        <div className="bg-gray-100 rounded-lg p-3 text-xs">
+          <div className="font-bold mb-2">Debug Info:</div>
+          <div>Current User ID: {currentUser?.id}</div>
+          <div>Friends Count: {friends.length}</div>
+          <div>Friends Names: {friends.map(f => f.name).join(", ") || "None"}</div>
+          <div>Global Data Count: {leaderboardData.length}</div>
+          <div>Friends Data Count: {friendsLeaderboardData.length}</div>
+          <div>Current View: {currentLeaderboardView}</div>
         </div>
 
         {/* Refresh Button */}

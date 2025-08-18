@@ -401,10 +401,23 @@ export const getLeaderboardData = async () => {
 export const getFriendsLeaderboard = async (userId: string, friendUsernames: string[]) => {
   try {
     // Get leaderboard data for current user and their friends
-    const allUsernames = [userId, ...friendUsernames];
+    if (friendUsernames.length === 0) {
+      // If no friends, just return current user data
+      const currentUserData = await db
+        .select({
+          userId: users.id,
+          username: users.username,
+          completedTasks: sql<number>`COALESCE(COUNT(CASE WHEN ${tasks.completed} = true THEN 1 END), 0)`.as('completedTasks'),
+          totalTasks: sql<number>`COALESCE(COUNT(${tasks.id}), 0)`.as('totalTasks'),
+          completionRate: sql<number>`COALESCE(ROUND((COUNT(CASE WHEN ${tasks.completed} = true THEN 1 END)::decimal / NULLIF(COUNT(${tasks.id}), 0) * 100), 1), 0)`.as('completionRate'),
+          isCurrentUser: sql<boolean>`${users.id} = ${userId}`.as('isCurrentUser')
+        })
+        .from(users)
+        .leftJoin(tasks, eq(users.id, tasks.userId))
+        .where(eq(users.id, userId))
+        .groupBy(users.id, users.username);
 
-    if (allUsernames.length === 0) {
-      return [];
+      return currentUserData;
     }
 
     const friendsLeaderboard = await db
