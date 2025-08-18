@@ -192,6 +192,8 @@ export async function completeTaskAction(taskId: string): Promise<ActionState> {
   try {
     const completedTask = await completeTask(taskId);
     revalidatePath("/tasks");
+    revalidatePath("/leaderboard");
+    revalidatePath("/");
     return { status: "success", message: "Task completed successfully", data: completedTask };
   } catch (error) {
     return { status: "error", message: "Failed to complete task" };
@@ -202,6 +204,8 @@ export async function resetCompletedTaskAction(taskId: string): Promise<ActionSt
   try {
     const resetTask = await resetCompletedTask(taskId);
     revalidatePath("/tasks");
+    revalidatePath("/leaderboard");
+    revalidatePath("/");
     return { status: "success", message: "Task reset successfully", data: resetTask };
   } catch (error) {
     return { status: "error", message: "Failed to reset task" };

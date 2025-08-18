@@ -312,6 +312,7 @@ export default function GardenApp() {
   const [isLoadingLeaderboard, setIsLoadingLeaderboard] = useState(false)
   const [leaderboardError, setLeaderboardError] = useState<string | null>(null)
   const [currentLeaderboardView, setCurrentLeaderboardView] = useState<"global" | "friends">("friends")
+  const [lastLeaderboardRefresh, setLastLeaderboardRefresh] = useState<Date | null>(null)
 
   // UI state
   const [purchasedItems, setPurchasedItems] = useState<Set<string>>(new Set())
@@ -338,6 +339,23 @@ export default function GardenApp() {
   // Profile picture state
   const [profilePicture, setProfilePicture] = useState<string>("😊")
   const [isProfileEditing, setIsProfileEditing] = useState(false)
+
+  // Particle system state for garden liveliness
+  const [particles, setParticles] = useState<Array<{
+    id: string
+    x: number
+    y: number
+    vx: number
+    vy: number
+    type: 'leaf' | 'petal' | 'sparkle' | 'snowflake' | 'firefly'
+    rotation: number
+    size: number
+    opacity: number
+    color: string
+  }>>([])
+  const [windStrength, setWindStrength] = useState(0.5)
+  const [windDirection, setWindDirection] = useState(1) // 1 for right, -1 for left
+  const [season, setSeason] = useState<'spring' | 'summer' | 'autumn' | 'winter'>('spring')
 
   // Function to update profile picture
   const updateProfilePicture = async (emoji: string) => {
@@ -429,6 +447,45 @@ export default function GardenApp() {
     }
   }, [currentScreen, currentUser])
 
+  // Initialize particle system
+  useEffect(() => {
+    // Create initial particles
+    const initialParticles = Array.from({ length: 10 }, () => createParticle())
+    setParticles(initialParticles)
+  }, [])
+
+  // Particle animation loop
+  useEffect(() => {
+    const particleInterval = setInterval(() => {
+      updateParticles()
+    }, 50) // 20 FPS for smooth animation
+
+    return () => clearInterval(particleInterval)
+  }, [windStrength, windDirection])
+
+  // Wind animation loop
+  useEffect(() => {
+    const windInterval = setInterval(() => {
+      updateWind()
+    }, 200) // Update wind every 200ms
+
+    return () => clearInterval(windInterval)
+  }, [])
+
+  // Seasonal change loop
+  useEffect(() => {
+    const seasonInterval = setInterval(() => {
+      setSeason(prev => {
+        const seasons: Array<'spring' | 'summer' | 'autumn' | 'winter'> = ['spring', 'summer', 'autumn', 'winter']
+        const currentIndex = seasons.indexOf(prev)
+        const nextIndex = (currentIndex + 1) % seasons.length
+        return seasons[nextIndex]
+      })
+    }, 30000) // Change season every 30 seconds for demo purposes
+
+    return () => clearInterval(seasonInterval)
+  }, [])
+
   // Helper function to refresh leaderboard if on leaderboard screen
   const refreshLeaderboardIfNeeded = () => {
     if (currentScreen === "leaderboard" && currentUser) {
@@ -440,21 +497,35 @@ export default function GardenApp() {
   const refreshLeaderboardInBackground = async () => {
     if (currentUser) {
       try {
+        console.log('Starting background leaderboard refresh for user:', currentUser.username)
+        
         // Load global leaderboard
         const globalResult = await getLeaderboardDataAction()
         if (globalResult.status === "success" && globalResult.data) {
+          console.log('Global leaderboard updated:', globalResult.data.length, 'users')
           setLeaderboardData(globalResult.data)
+        } else {
+          console.error('Failed to get global leaderboard:', globalResult)
         }
         
         // Load friends leaderboard
         const friendUsernames = friends.map(f => f.name)
         const friendsResult = await getFriendsLeaderboardAction(currentUser.id, friendUsernames)
         if (friendsResult.status === "success" && friendsResult.data) {
+          console.log('Friends leaderboard updated:', friendsResult.data.length, 'users')
           setFriendsLeaderboardData(friendsResult.data)
+        } else {
+          console.error('Failed to get friends leaderboard:', friendsResult)
         }
+        
+        // Set refresh timestamp
+        setLastLeaderboardRefresh(new Date())
+        console.log('Background leaderboard refresh completed successfully')
       } catch (error) {
         console.error("Background leaderboard refresh failed:", error)
       }
+    } else {
+      console.log('No current user, skipping background leaderboard refresh')
     }
   }
 
@@ -898,8 +969,11 @@ export default function GardenApp() {
     const task = tasks.find((t) => t.id === taskId)
     if (task && task.progress >= task.target && !task.completed) {
       try {
+        console.log('Completing task:', task.name, 'for user:', currentUser.username)
+        
         // Update task in database
         await completeTaskAction(taskId)
+        console.log('Task marked as completed in database')
         
         // Update local state - mark as completed
         setTasks((prev: any) => prev.map((t: any) => (t.id === taskId ? { ...t, completed: true } : t)))
@@ -911,16 +985,38 @@ export default function GardenApp() {
         
         // Update current user
         setCurrentUser((prev: any) => prev ? { ...prev, money: newMoney } : null)
+        console.log('Money updated:', newMoney)
         
-        // Refresh leaderboard data after task completion
-        refreshLeaderboardIfNeeded()
-        
-        // Also refresh leaderboard data in background to keep it current
-        refreshLeaderboardInBackground()
-        
-        // Reset completed task after a short delay instead of replacing it
+        // Wait a moment for database to sync, then refresh leaderboard
         setTimeout(async () => {
           try {
+            console.log('Refreshing leaderboard after task completion...')
+            // Refresh leaderboard data if on leaderboard screen
+            refreshLeaderboardIfNeeded()
+            
+            // Also refresh leaderboard data in background to keep it current
+            await refreshLeaderboardInBackground()
+            console.log('Leaderboard refreshed successfully')
+            
+            // Force immediate leaderboard refresh to ensure data is current
+            if (currentScreen === "leaderboard") {
+              console.log('Force refreshing leaderboard data...')
+              await loadLeaderboardData()
+            }
+            
+            // Debug the leaderboard data to see what's happening
+            setTimeout(() => {
+              testLeaderboardData()
+            }, 1000)
+          } catch (error) {
+            console.error('Failed to refresh leaderboard:', error)
+          }
+        }, 500) // Wait 500ms for database to sync
+        
+        // Reset completed task after a longer delay to show completion animation
+        setTimeout(async () => {
+          try {
+            console.log('Resetting completed task...')
             // Reset the completed task to start over
             await resetCompletedTaskAction(taskId)
             
@@ -929,15 +1025,35 @@ export default function GardenApp() {
               t.id === taskId ? { ...t, progress: 0, completed: false } : t
             ))
             
-            // Refresh leaderboard after task reset
-            refreshLeaderboardIfNeeded()
-            
-            // Also refresh leaderboard data in background to keep it current
-            refreshLeaderboardInBackground()
+            // Wait a moment for database to sync, then refresh leaderboard again
+            setTimeout(async () => {
+              try {
+                console.log('Refreshing leaderboard after task reset...')
+                // Refresh leaderboard after task reset
+                refreshLeaderboardIfNeeded()
+                
+                // Also refresh leaderboard data in background to keep it current
+                await refreshLeaderboardInBackground()
+                console.log('Leaderboard refreshed after task reset')
+                
+                // Force immediate leaderboard refresh to ensure data is current
+                if (currentScreen === "leaderboard") {
+                  console.log('Force refreshing leaderboard data after reset...')
+                  await loadLeaderboardData()
+                }
+                
+                // Debug the leaderboard data to see what's happening
+                setTimeout(() => {
+                  testLeaderboardData()
+                }, 1000)
+              } catch (error) {
+                console.error('Failed to refresh leaderboard after task reset:', error)
+              }
+            }, 500)
           } catch (error) {
             console.error("Failed to reset completed task:", error)
           }
-        }, 1000) // 1 second delay to show completion animation
+        }, 2000) // 2 second delay to show completion animation
         
       } catch (error) {
         console.error("Failed to complete task:", error)
@@ -1420,7 +1536,7 @@ export default function GardenApp() {
     try {
       setIsLoadingLeaderboard(true)
       setLeaderboardError(null)
-
+      
       // Load global leaderboard
       const globalResult = await getLeaderboardDataAction()
       if (globalResult.status === "success" && globalResult.data) {
@@ -1429,10 +1545,9 @@ export default function GardenApp() {
       } else {
         console.log("Global leaderboard result:", globalResult)
       }
-
+      
       // Load friends leaderboard
       const friendUsernames = friends.map(f => f.name)
-      console.log("Friend usernames:", friendUsernames)
       const friendsResult = await getFriendsLeaderboardAction(currentUser.id, friendUsernames)
       if (friendsResult.status === "success" && friendsResult.data) {
         console.log("Friends leaderboard data:", friendsResult.data)
@@ -1440,6 +1555,10 @@ export default function GardenApp() {
       } else {
         console.log("Friends leaderboard result:", friendsResult)
       }
+      
+      // Set refresh timestamp
+      setLastLeaderboardRefresh(new Date())
+      console.log("Leaderboard data loaded successfully")
     } catch (error) {
       console.error("Failed to load leaderboard data:", error)
       setLeaderboardError("Failed to load leaderboard data")
@@ -1630,7 +1749,12 @@ export default function GardenApp() {
               } ${
                 touchDragData?.data.type === "garden" && touchDragData.data.sourceId === item.id ? "ring-2 ring-blue-500 ring-opacity-75" : ""
               }`}
-              style={{ left: item.x, top: item.y }}
+              style={{ 
+                left: item.x, 
+                top: item.y,
+                transform: `rotate(${windStrength * windDirection * 2}deg)`,
+                transition: 'transform 0.5s ease-out'
+              }}
               draggable
               onDragStart={(e) => handleDragStart(e, { type: "garden", item, sourceId: item.id })}
               onTouchStart={(e) => handleTouchStart(e, { type: "garden", item, sourceId: item.id })}
@@ -1666,6 +1790,62 @@ export default function GardenApp() {
               )}
             </div>
           )}
+
+          {/* Floating Particles System */}
+          {particles.map((particle) => (
+            <div
+              key={particle.id}
+              className={`absolute pointer-events-none z-20 ${
+                particle.type === 'leaf' ? 'particle-leaf' :
+                particle.type === 'petal' ? 'particle-petal' :
+                particle.type === 'sparkle' ? 'particle-sparkle' :
+                particle.type === 'snowflake' ? 'particle-snowflake' :
+                'particle-firefly'
+              }`}
+              style={{
+                left: particle.x,
+                top: particle.y,
+                transform: `rotate(${particle.rotation}deg) scale(${particle.size})`,
+                opacity: particle.opacity,
+                transition: 'transform 0.1s ease-out'
+              }}
+            >
+              {particle.type === 'leaf' && (
+                <span className="text-lg text-green-600 drop-shadow-sm">🍃</span>
+              )}
+              {particle.type === 'petal' && (
+                <span className="text-lg text-pink-400 drop-shadow-sm">🌸</span>
+              )}
+              {particle.type === 'sparkle' && (
+                <span className="text-lg text-yellow-400 drop-shadow-sm">✨</span>
+              )}
+              {particle.type === 'snowflake' && (
+                <span className="text-lg text-blue-400 drop-shadow-sm">❄️</span>
+              )}
+              {particle.type === 'firefly' && (
+                <span className="text-lg text-purple-400 drop-shadow-sm">🔥</span>
+              )}
+            </div>
+          ))}
+
+          {/* Wind Indicator */}
+          <div 
+            className="absolute top-2 right-2 text-xs text-white bg-black/20 px-2 py-1 rounded-full pointer-events-none wind-indicator"
+            style={{
+              transform: `translateX(${windDirection * windStrength * 10}px)`,
+              transition: 'transform 0.5s ease-out'
+            }}
+          >
+            💨 {windStrength > 0.8 ? 'Strong' : windStrength > 0.5 ? 'Moderate' : 'Light'} Wind
+          </div>
+
+          {/* Season Indicator */}
+          <div className="absolute top-2 left-2 text-xs text-white bg-black/20 px-2 py-1 rounded-full pointer-events-none">
+            {season === 'spring' && '🌸 Spring'}
+            {season === 'summer' && '☀️ Summer'}
+            {season === 'autumn' && '🍂 Autumn'}
+            {season === 'winter' && '❄️ Winter'}
+          </div>
         </div>
       </div>
       <div
@@ -2176,6 +2356,19 @@ export default function GardenApp() {
           </div>
         </div>
 
+        {/* Leaderboard Status */}
+        <div className="bg-muted rounded-lg p-3 text-center">
+          <div className="text-xs text-muted-foreground">
+            {isLoadingLeaderboard ? (
+              "🔄 Refreshing leaderboard..."
+            ) : lastLeaderboardRefresh ? (
+              `📊 Last updated: ${lastLeaderboardRefresh.toLocaleTimeString()}`
+            ) : (
+              "📊 Leaderboard ready"
+            )}
+          </div>
+        </div>
+
         {/* Leaderboard List */}
         <div className="flex-1 overflow-y-auto space-y-2">
           {isLoadingLeaderboard ? (
@@ -2238,6 +2431,7 @@ export default function GardenApp() {
           <div>Global Data Count: {leaderboardData.length}</div>
           <div>Friends Data Count: {friendsLeaderboardData.length}</div>
           <div>Current View: {currentLeaderboardView}</div>
+          <div>Last Refresh: {lastLeaderboardRefresh ? lastLeaderboardRefresh.toLocaleTimeString() : "Never"}</div>
         </div>
 
         {/* Refresh Button */}
@@ -2247,6 +2441,15 @@ export default function GardenApp() {
           className="w-full hover-lift ripple"
         >
           {isLoadingLeaderboard ? "REFRESHING..." : "REFRESH LEADERBOARD"}
+        </Button>
+        
+        {/* Debug Button */}
+        <Button
+          onClick={testLeaderboardData}
+          variant="outline"
+          className="w-full mt-2 hover-lift ripple"
+        >
+          🐛 DEBUG LEADERBOARD
         </Button>
       </div>
     </div>
@@ -2461,6 +2664,116 @@ export default function GardenApp() {
     }
   }
 
+  // Function to test leaderboard data
+  const testLeaderboardData = async () => {
+    if (!currentUser) return
+    
+    try {
+      console.log('=== LEADERBOARD DEBUG INFO ===')
+      console.log('Current user:', currentUser.username, currentUser.id)
+      console.log('Current tasks:', tasks)
+      console.log('Completed tasks:', tasks.filter(t => t.completed))
+      console.log('Total tasks:', tasks.length)
+      console.log('Completed count:', tasks.filter(t => t.completed).length)
+      
+      // Test the leaderboard query directly
+      const globalResult = await getLeaderboardDataAction()
+      console.log('Global leaderboard result:', globalResult)
+      
+      if (globalResult.status === "success" && globalResult.data) {
+        const currentUserData = globalResult.data.find((u: any) => u.userId === currentUser.id)
+        console.log('Current user in leaderboard:', currentUserData)
+      }
+      
+      console.log('=== END DEBUG INFO ===')
+    } catch (error) {
+      console.error('Debug failed:', error)
+    }
+  }
+
+  // Particle system functions for garden liveliness
+  const createParticle = () => {
+    // Seasonal particle types
+    const seasonalTypes = {
+      spring: ['petal', 'sparkle', 'leaf'],
+      summer: ['sparkle', 'firefly', 'leaf'],
+      autumn: ['leaf', 'petal', 'sparkle'],
+      winter: ['snowflake', 'sparkle', 'leaf']
+    }
+    
+    const availableTypes = seasonalTypes[season]
+    const type = availableTypes[Math.floor(Math.random() * availableTypes.length)] as 'leaf' | 'petal' | 'sparkle' | 'snowflake' | 'firefly'
+    
+    const particle = {
+      id: Math.random().toString(),
+      x: Math.random() * 400, // Garden width
+      y: Math.random() * 300, // Garden height
+      vx: (Math.random() - 0.5) * 0.5 + windStrength * windDirection * 0.3,
+      vy: Math.random() * 0.3 + 0.1,
+      type,
+      rotation: Math.random() * 360,
+      size: Math.random() * 0.5 + 0.5,
+      opacity: Math.random() * 0.5 + 0.5,
+      color: `hsl(${Math.random() * 360}deg, 50%, 50%)`
+    }
+    
+    return particle
+  }
+
+  const updateParticles = () => {
+    setParticles(prev => {
+      const updated = prev.map(particle => {
+        // Update position
+        let newX = particle.x + particle.vx
+        let newY = particle.y + particle.vy
+        
+        // Add wind effect
+        newX += windStrength * windDirection * 0.1
+        
+        // Update rotation
+        const newRotation = particle.rotation + 1
+        
+        // Wrap around edges
+        if (newX < -20) newX = 420
+        if (newX > 420) newX = -20
+        if (newY < -20) newY = 320
+        if (newY > 320) newY = -20
+        
+        return {
+          ...particle,
+          x: newX,
+          y: newY,
+          rotation: newRotation
+        }
+      })
+      
+      // Remove old particles and add new ones
+      if (updated.length < 15) {
+        updated.push(createParticle())
+      }
+      
+      // Remove particles that are too old (randomly)
+      if (Math.random() < 0.02) {
+        return updated.slice(1)
+      }
+      
+      return updated
+    })
+  }
+
+  const updateWind = () => {
+    // Gradually change wind
+    setWindStrength(prev => {
+      const change = (Math.random() - 0.5) * 0.1
+      return Math.max(0.1, Math.min(1.5, prev + change))
+    })
+    
+    // Occasionally change wind direction
+    if (Math.random() < 0.01) {
+      setWindDirection(prev => prev * -1)
+    }
+  }
+
   if (!isSignedIn) {
     return (
       <SignInScreen
@@ -2484,6 +2797,56 @@ export default function GardenApp() {
 
   return (
     <div className="w-full h-[800px] max-w-sm mx-auto bg-background rounded-3xl shadow-2xl overflow-hidden flex flex-col">
+      <style jsx>{`
+        @keyframes float {
+          0%, 100% { transform: translateY(0px) rotate(0deg); }
+          50% { transform: translateY(-10px) rotate(180deg); }
+        }
+        
+        @keyframes sparkle {
+          0%, 100% { opacity: 0.5; transform: scale(1) rotate(0deg); }
+          50% { opacity: 1; transform: scale(1.2) rotate(180deg); }
+        }
+        
+        @keyframes sway {
+          0%, 100% { transform: rotate(-5deg); }
+          50% { transform: rotate(5deg); }
+        }
+        
+        @keyframes fall {
+          0% { transform: translateY(-20px) rotate(0deg); }
+          100% { transform: translateY(300px) rotate(360deg); }
+        }
+        
+        @keyframes glow {
+          0%, 100% { opacity: 0.5; filter: brightness(1); }
+          50% { opacity: 1; filter: brightness(1.5); }
+        }
+        
+        .particle-leaf {
+          animation: float 3s ease-in-out infinite;
+        }
+        
+        .particle-petal {
+          animation: sway 4s ease-in-out infinite;
+        }
+        
+        .particle-sparkle {
+          animation: sparkle 2s ease-in-out infinite;
+        }
+        
+        .particle-snowflake {
+          animation: fall 6s linear infinite;
+        }
+        
+        .particle-firefly {
+          animation: glow 3s ease-in-out infinite;
+        }
+        
+        .wind-indicator {
+          animation: sway 3s ease-in-out infinite;
+        }
+      `}</style>
       <div key={currentScreen} className="screen-enter slide-in flex-1 flex flex-col min-h-0 overflow-hidden">
         {renderScreen()}
       </div>
