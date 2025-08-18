@@ -356,7 +356,7 @@ export default function GardenApp() {
   const [windStrength, setWindStrength] = useState(0.5)
   const [windDirection, setWindDirection] = useState(1) // 1 for right, -1 for left
   const [season, setSeason] = useState<'spring' | 'summer' | 'autumn' | 'winter'>('spring')
-  const [particlesEnabled, setParticlesEnabled] = useState(true) // Re-enabled with new structure
+  const [particlesEnabled, setParticlesEnabled] = useState(false) // Completely disabled
 
   // Function to update profile picture
   const updateProfilePicture = (emoji: string) => {
@@ -1696,60 +1696,31 @@ export default function GardenApp() {
 
   const GardenScreen = () => (
     <div className="flex-1 flex flex-col">
-      {/* Particles Container - Completely Separate from Garden */}
-      {particlesEnabled && (
-        <div 
-          className="absolute inset-0 pointer-events-none"
-          style={{ 
-            zIndex: 1,
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: 'transparent'
-          }}
-        >
-          {particles.map((particle) => (
-            <div
-              key={particle.id}
-              className={`absolute pointer-events-none ${
-                particle.type === 'leaf' ? 'particle-leaf' :
-                particle.type === 'petal' ? 'particle-petal' :
-                particle.type === 'sparkle' ? 'particle-sparkle' :
-                particle.type === 'snowflake' ? 'particle-snowflake' :
-                'particle-firefly'
-              }`}
-              style={{
-                left: particle.x + 16, // Adjust for container padding
-                top: particle.y + 80,  // Adjust for header height
-                transform: `rotate(${particle.rotation}deg) scale(${particle.size})`,
-                opacity: particle.opacity,
-                transition: 'transform 0.1s ease-out',
-                pointerEvents: 'none',
-                userSelect: 'none',
-                WebkitUserSelect: 'none'
-              }}
-            >
-              {particle.type === 'leaf' && (
-                <span className="text-lg text-green-600 drop-shadow-sm pointer-events-none select-none">🍃</span>
-              )}
-              {particle.type === 'petal' && (
-                <span className="text-lg text-pink-400 drop-shadow-sm pointer-events-none select-none">🌸</span>
-              )}
-              {particle.type === 'sparkle' && (
-                <span className="text-lg text-yellow-400 drop-shadow-sm pointer-events-none select-none">✨</span>
-              )}
-              {particle.type === 'snowflake' && (
-                <span className="text-lg text-blue-400 drop-shadow-sm pointer-events-none select-none">❄️</span>
-              )}
-              {particle.type === 'firefly' && (
-                <span className="text-lg text-purple-400 drop-shadow-sm pointer-events-none select-none">🔥</span>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
+      {/* Simple Background Effects - No Particles */}
+      <div 
+        className="absolute inset-0 pointer-events-none"
+        style={{ 
+          zIndex: 1,
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'transparent'
+        }}
+      >
+        {/* Static floating elements for visual interest */}
+        <div className="absolute top-20 left-10 text-2xl text-green-600/30 pointer-events-none">🍃</div>
+        <div className="absolute top-40 right-16 text-xl text-pink-400/30 pointer-events-none">🌸</div>
+        <div className="absolute top-60 left-20 text-lg text-yellow-400/30 pointer-events-none">✨</div>
+        <div className="absolute top-80 right-24 text-xl text-blue-400/30 pointer-events-none">❄️</div>
+        <div className="absolute top-100 left-32 text-lg text-purple-400/30 pointer-events-none">🔥</div>
+        
+        {/* Additional static elements */}
+        <div className="absolute top-120 right-8 text-lg text-green-500/20 pointer-events-none">🍃</div>
+        <div className="absolute top-140 left-16 text-xl text-pink-500/20 pointer-events-none">🌸</div>
+        <div className="absolute top-160 right-20 text-lg text-yellow-500/20 pointer-events-none">✨</div>
+      </div>
 
       <div className="p-4 pb-2 flex-shrink-0">
         <div className="flex justify-between items-center mb-4">
@@ -1861,15 +1832,7 @@ export default function GardenApp() {
               {season === 'winter' && '❄️ Winter'}
             </div>
 
-            {/* Debug Toggle for Particles */}
-            <div className="absolute bottom-2 right-2">
-              <button
-                onClick={() => setParticlesEnabled(!particlesEnabled)}
-                className="text-xs bg-black/20 text-white px-2 py-1 rounded-full hover:bg-black/40 transition-colors pointer-events-auto"
-              >
-                {particlesEnabled ? '🌿 Hide Particles' : '🌿 Show Particles'}
-              </button>
-            </div>
+
           </div>
         </div>
       </div>
